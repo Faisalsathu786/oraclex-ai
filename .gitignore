@@ -1,0 +1,14 @@
+node_modules/
+.env
+.next/
+dist/
+build/
+*.log
+coverage/
+.DS_Store
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+backend/node_modules/
+frontend/.next/
+frontend/node_modules/
