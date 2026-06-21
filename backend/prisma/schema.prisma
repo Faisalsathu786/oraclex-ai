@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  walletAddress String?   @unique
+  email         String?   @unique
+  username      String?   @unique
+  displayName   String?
+  avatarUrl     String?
+  bio           String?
+  reputation    Int       @default(0)
+  xp            Int       @default(0)
+  totalWins     Int       @default(0)
+  totalBets     Int       @default(0)
+  accuracy      Float     @default(0)
+  streak        Int       @default(0)
+  rank          String    @default("Bronze")
+  isAdmin       Boolean   @default(false)
+  isModerator   Boolean   @default(false)
+  isSuspended   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  markets       Market[]
+  bets          Bet[]
+  followers     Follow[]  @relation("following")
+  following     Follow[]  @relation("follower")
+  activities    Activity[]
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("follower", fields: [followerId], references: [id])
+  following   User     @relation("following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+model Market {
+  id               String    @id @default(cuid())
+  marketId         Int       @unique
+  title            String
+  description      String
+  category         String
+  resolutionSource String?
+  imageUrl         String?
+  tags             String[]  @default([])
+  state            String    @default("Pending")
+  yesPool          Float     @default(0)
+  noPool           Float     @default(0)
+  totalVolume      Float     @default(0)
+  participantCount Int       @default(0)
+  outcomeYes       Boolean?
+  resolved         Boolean   @default(false)
+  endDate          DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  contractAddress  String?
+
+  creatorId        String
+  creator          User      @relation(fields: [creatorId], references: [id])
+  bets             Bet[]
+  aiAnalyses       AIAnalysis[]
+  comments         Comment[]
+}
+
+model Bet {
+  id         String   @id @default(cuid())
+  outcome    Boolean
+  amount     Float
+  claimedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  marketId   String
+  market     Market   @relation(fields: [marketId], references: [id])
+}
+
+model AIAnalysis {
+  id            String   @id @default(cuid())
+  probability   Float
+  confidence    Float
+  riskLevel     String
+  bullCase      String
+  bearCase      String
+  riskFactors   String
+  summary       String
+  marketSummary String
+  storageHash   String?
+  createdAt     DateTime @default(now())
+
+  marketId      String
+  market        Market   @relation(fields: [marketId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  userId    String
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Badge {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String?
+  userId    String
+  createdAt DateTime @default(now())
+}
