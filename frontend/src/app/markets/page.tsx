@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, Filter, TrendingUp, Clock, Award } from 'lucide-react'
+import { Search, Clock, TrendingUp, Award, ImageOff } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const markets = [
@@ -13,6 +13,7 @@ const markets = [
     probability: 67,
     endDate: 'Dec 31, 2026',
     participants: '1.2K',
+    image: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400',
   },
   {
     id: '2',
@@ -22,6 +23,7 @@ const markets = [
     probability: 43,
     endDate: 'Jun 30, 2026',
     participants: '856',
+    image: '',
   },
   {
     id: '3',
@@ -31,6 +33,7 @@ const markets = [
     probability: 28,
     endDate: 'Dec 31, 2026',
     participants: '421',
+    image: '',
   },
 ]
 
@@ -40,9 +43,8 @@ export default function MarketsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">Explore Markets</h1>
-          <p className="text-muted-foreground mt-1">Discover and trade prediction markets</p>
+          <p className="text-muted-foreground mt-1">Browse all available prediction markets</p>
         </div>
-        <Link href="/create" className="btn-primary text-sm text-center">Create Market</Link>
       </div>
 
       <div className="flex items-center gap-3 mb-6 flex-wrap">
@@ -57,7 +59,7 @@ export default function MarketsPage() {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {markets.map((market, i) => (
           <motion.div
             key={market.id}
@@ -66,26 +68,35 @@ export default function MarketsPage() {
             transition={{ delay: i * 0.1 }}
           >
             <Link href={`/markets/${market.id}`}>
-              <div className="glass-card-hover p-6 cursor-pointer group">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="badge-primary">{market.category}</span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock size={12} /> {market.endDate}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">{market.title}</h3>
-                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                      <span><TrendingUp size={14} className="inline mr-1" />{market.volume}</span>
-                      <span><Award size={14} className="inline mr-1" />{market.participants} traders</span>
-                    </div>
+              <div className="glass-card-hover overflow-hidden group">
+                {market.image ? (
+                  <div className="h-40 overflow-hidden">
+                    <img src={market.image} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
-                  <div className="text-center">
-                    <div className={`text-2xl font-bold ${market.probability >= 50 ? 'text-success' : 'text-destructive'}`}>
-                      {market.probability}%
+                ) : (
+                  <div className="h-40 bg-surface flex items-center justify-center">
+                    <ImageOff size={32} className="text-muted-foreground/50" />
+                  </div>
+                )}
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="badge-primary">{market.category}</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock size={12} /> {market.endDate}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-2">{market.title}</h3>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><TrendingUp size={12} />{market.volume}</span>
+                      <span className="flex items-center gap-1"><Award size={12} />{market.participants}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">YES odds</div>
+                    <div className="text-right">
+                      <div className={`text-lg font-bold ${market.probability >= 50 ? 'text-success' : 'text-destructive'}`}>
+                        {market.probability}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Buy YES</div>
+                    </div>
                   </div>
                 </div>
               </div>

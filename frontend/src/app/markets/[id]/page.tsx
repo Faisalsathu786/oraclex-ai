@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 export default function MarketDetailPage() {
   const [betAmount, setBetAmount] = useState('')
   const [selectedOutcome, setSelectedOutcome] = useState<'YES' | 'NO' | null>(null)
+  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy')
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -18,19 +19,24 @@ export default function MarketDetailPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="badge-primary">Crypto</span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={12} /> Closes Dec 31, 2026</span>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
+            <div className="h-48 bg-gradient-to-r from-purple-900/50 to-blue-900/50 flex items-center justify-center">
+              <div className="text-8xl font-bold text-white/10">BTC</div>
             </div>
-            <h1 className="text-2xl font-bold mb-4">Will BTC reach $200,000 before Dec 2026?</h1>
-            <p className="text-muted-foreground mb-4">
-              Prediction market for Bitcoin price reaching the $200,000 milestone by the end of 2026.
-              Resolution will be based on CoinMarketCap price data at market close.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1"><Users size={14} /> 1.2K participants</span>
-              <span className="flex items-center gap-1"><TrendingUp size={14} /> $1.2M volume</span>
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="badge-primary">Crypto</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={12} /> Closes Dec 31, 2026</span>
+              </div>
+              <h1 className="text-2xl font-bold mb-4">Will BTC reach $200,000 before Dec 2026?</h1>
+              <p className="text-muted-foreground mb-4">
+                Prediction market for Bitcoin price reaching the $200,000 milestone by the end of 2026.
+                Resolution will be based on CoinMarketCap price data at market close.
+              </p>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1"><Users size={14} /> 1.2K participants</span>
+                <span className="flex items-center gap-1"><TrendingUp size={14} /> $1.2M volume</span>
+              </div>
             </div>
           </motion.div>
 
@@ -102,10 +108,30 @@ export default function MarketDetailPage() {
           </motion.div>
         </div>
 
-        {/* Betting Panel */}
+        {/* Trading Panel */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-1">
           <div className="glass-card p-6 sticky top-24">
-            <h2 className="text-lg font-semibold mb-4">Place Bet</h2>
+            <h2 className="text-lg font-semibold mb-4">Trade</h2>
+
+            {/* Buy/Sell Tabs */}
+            <div className="grid grid-cols-2 gap-0 mb-4 bg-secondary rounded-xl p-1">
+              <button
+                onClick={() => setActiveTab('buy')}
+                className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'buy' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                }`}
+              >
+                Buy
+              </button>
+              <button
+                onClick={() => setActiveTab('sell')}
+                className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'sell' ? 'bg-destructive text-white' : 'text-muted-foreground'
+                }`}
+              >
+                Sell
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <button
@@ -118,6 +144,7 @@ export default function MarketDetailPage() {
               >
                 <div className="text-2xl">67%</div>
                 <div className="text-sm mt-1">YES</div>
+                <div className="text-xs text-muted-foreground mt-0.5">$0.67/share</div>
               </button>
               <button
                 onClick={() => setSelectedOutcome('NO')}
@@ -129,6 +156,7 @@ export default function MarketDetailPage() {
               >
                 <div className="text-2xl">33%</div>
                 <div className="text-sm mt-1">NO</div>
+                <div className="text-xs text-muted-foreground mt-0.5">$0.33/share</div>
               </button>
             </div>
 
@@ -146,18 +174,30 @@ export default function MarketDetailPage() {
               </div>
             </div>
 
-            <button className="btn-primary w-full mb-4" disabled={!selectedOutcome || !betAmount}>
-              {selectedOutcome ? `Buy ${selectedOutcome} Shares` : 'Select Outcome'}
+            <button className={`w-full py-3 rounded-xl font-semibold mb-4 transition-all ${
+              activeTab === 'buy'
+                ? 'bg-success text-white hover:opacity-90'
+                : 'bg-destructive text-white hover:opacity-90'
+            }`} disabled={!selectedOutcome || !betAmount}>
+              {activeTab === 'buy'
+                ? (selectedOutcome ? `Buy ${selectedOutcome} Shares` : 'Select Outcome')
+                : (selectedOutcome ? `Sell ${selectedOutcome} Shares` : 'Select Outcome')
+              }
             </button>
 
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex justify-between"><span>Your Balance</span><span className="text-white font-medium">10,000 USDC</span></div>
-              <div className="flex justify-between"><span>Potential Payout</span><span className="text-white font-medium">-- USDC</span></div>
-              <div className="flex justify-between"><span>Protocol Fee</span><span className="text-white font-medium">2.5%</span></div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-muted-foreground"><span>Your Balance</span><span className="text-white font-medium">10,000 USDC</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>Est. Shares</span><span className="text-white font-medium">{betAmount ? Number(betAmount) / (selectedOutcome === 'YES' ? 0.67 : 0.33) : '--'}</span></div>
+              {activeTab === 'sell' && (
+                <div className="flex justify-between text-warning"><span>Sell Tax (2.5%)</span><span className="text-white font-medium">{betAmount ? (Number(betAmount) * 0.025).toFixed(2) : '--'} USDC</span></div>
+              )}
+              {activeTab === 'buy' && (
+                <div className="flex justify-between text-success"><span>Buy Fee</span><span className="text-white font-medium">FREE</span></div>
+              )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-border">
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Users size={12} /> YES Pool: $800K</span>
                 <span className="flex items-center gap-1"><Users size={12} /> NO Pool: $400K</span>
               </div>

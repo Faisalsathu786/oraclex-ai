@@ -52,9 +52,11 @@ contract OracleXFactory is Initializable, UUPSUpgradeable, AccessControlUpgradea
         string calldata _title,
         string calldata _description,
         string calldata _category,
+        string calldata _imageUrl,
         string calldata _resolutionSource,
         uint256 _endDate
     ) external returns (address) {
+        require(accessManager.isModerator(msg.sender) || accessManager.isSuperAdmin(msg.sender), "Only moderators can create markets");
         require(bytes(_title).length > 0, "Title required");
         require(bytes(_description).length > 0, "Description required");
         require(_endDate > block.timestamp, "End date must be in future");
@@ -75,6 +77,7 @@ contract OracleXFactory is Initializable, UUPSUpgradeable, AccessControlUpgradea
             _title,
             _description,
             _category,
+            _imageUrl,
             _resolutionSource,
             _endDate,
             accessManager.protocolFee()

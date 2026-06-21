@@ -18,6 +18,7 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         string title;
         string description;
         string category;
+        string imageUrl;
         string resolutionSource;
         address creator;
         MarketState state;
@@ -29,7 +30,7 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         uint256 participantCount;
         bool outcomeYes;
         bool resolved;
-        uint256 protocolFee;
+        uint256 protocolFee; // sell tax in basis points
     }
 
     struct Bet {
@@ -49,6 +50,7 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
 
     event MarketCreated(uint256 indexed marketId, address indexed creator, string title);
     event BetPlaced(uint256 indexed marketId, address indexed user, bool outcome, uint256 amount);
+    event BetSold(uint256 indexed marketId, address indexed user, bool outcome, uint256 amount, uint256 fee);
     event MarketLocked(uint256 indexed marketId);
     event MarketResolved(uint256 indexed marketId, bool outcome);
     event RewardClaimed(uint256 indexed marketId, address indexed user, uint256 amount);
@@ -80,6 +82,7 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         string calldata _title,
         string calldata _description,
         string calldata _category,
+        string calldata _imageUrl,
         string calldata _resolutionSource,
         uint256 _endDate,
         uint256 _protocolFee
@@ -99,6 +102,7 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
             title: _title,
             description: _description,
             category: _category,
+            imageUrl: _imageUrl,
             resolutionSource: _resolutionSource,
             creator: _creator,
             state: MarketState.Pending,
@@ -155,6 +159,49 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         market.participantCount = participants.length;
 
         emit BetPlaced(marketId, msg.sender, _outcome, msg.value);
+    }
+
+    function sellShares() external nonReentrant {
+        require(market.state == MarketState.Open, "Market not open");
+        require(hasBet[msg.sender], "No shares to sell");
+        require(bets[msg.sender].claimedAt == 0, "Already sold");
+
+        Bet storage userBet = bets[msg.sender];
+        uint256 sellAmount = userBet.amount;
+        uint256 sellPool = userBet.outcome ? market.yesPool : market.noPool;
+        uint256 totalPool = market.yesPool + market.noPool;
+
+        require(sellPool >= sellAmount, "Insufficient pool");
+
+        // Calculate buyback value: what user gets when selling
+        // If YES pool = 60% and NO pool = 40%, YES shares are worth more
+        uint256 shareValue = (sellAmount * totalPool) / sellPool;
+        uint256 sellFee = (shareValue * market.protocolFee) / 10000;
+        uint256 payout = shareValue - sellFee;
+
+        // Mark as claimed (sold)
+        userBet.claimedAt = block.timestamp;
+
+        // Update pools - remove share from the pool
+        if (userBet.outcome) {
+            market.yesPool -= sellAmount;
+        } else {
+            market.noPool -= sellAmount;
+        }
+
+        // Send fee to treasury
+        if (sellFee > 0 && treasury != address(0)) {
+            (bool feeSent, ) = payable(treasury).call{value: sellFee}("");
+            require(feeSent, "Fee transfer failed");
+        }
+
+        // Send payout to seller
+        if (payout > 0) {
+            (bool success, ) = payable(msg.sender).call{value: payout}("");
+            require(success, "Sell transfer failed");
+        }
+
+        emit BetSold(marketId, msg.sender, userBet.outcome, sellAmount, sellFee);
     }
 
     function lockMarket() external {
