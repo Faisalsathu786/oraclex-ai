@@ -1,31 +1,21 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navbar } from '@/components/layout/Navbar'
 import { Web3Provider } from '@/components/web3/Web3Provider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'OracleX AI - Decentralized Prediction Markets',
+  title: 'OracleX AI - Prediction Markets on 0G',
   description: 'AI-powered prediction market platform on the 0G ecosystem',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} min-h-screen`}>
+      <body className={inter.className}>
         <Web3Provider>
-          <div className="relative flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              {children}
-            </main>
-          </div>
+          {children}
         </Web3Provider>
       </body>
     </html>
