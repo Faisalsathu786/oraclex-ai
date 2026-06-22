@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, TrendingUp, Shield, Brain, Trophy, BarChart3, Users, Zap } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { CONTRACTS } from '@/lib/config'
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -17,9 +18,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
         <div className="mx-auto max-w-6xl text-center relative z-10">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 text-success text-sm font-medium mb-6">
               <Zap size={14} />
-              Powered by 0G Ecosystem
+              Deployed on 0G Mainnet
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
               Predict the Future with
@@ -162,15 +163,21 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
-            <span className="font-semibold gradient-text text-sm">OracleX AI</span>
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
+              <span className="font-semibold gradient-text text-sm">OracleX AI</span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <a href="https://github.com/Faisalsathu786/oraclex-ai" target="_blank" className="hover:text-foreground transition-colors">GitHub</a>
+              <a href="https://0g.ai" target="_blank" className="hover:text-foreground transition-colors">0G</a>
+              <span>Powered by 0G Ecosystem</span>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="https://github.com/Faisalsathu786/oraclex-ai" target="_blank" className="hover:text-foreground transition-colors">GitHub</a>
-            <a href="https://0g.ai" target="_blank" className="hover:text-foreground transition-colors">0G</a>
-            <span>Powered by 0G Ecosystem</span>
+          <div className="text-center text-xs text-muted-foreground space-y-1">
+            <p>Factory: {CONTRACTS.factory} | AccessManager: {CONTRACTS.accessManager}</p>
+            <p>Treasury: {CONTRACTS.treasury} | Market: {CONTRACTS.market}</p>
           </div>
         </div>
       </footer>
