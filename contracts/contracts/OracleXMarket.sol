@@ -15,7 +15,7 @@ contract OracleXMarket {
     IAccessManager2 public accessManager;
     address public treasury;
 
-    enum MarketState { Pending, Open, Locked, Resolved, Cancelled }
+    enum uint256 { Pending, Open, Locked, Resolved, Cancelled }
 
     struct Outcome {
         string name;
@@ -29,7 +29,7 @@ contract OracleXMarket {
         string category;
         string imageUrl;
         address creator;
-        MarketState state;
+        uint256 state;
         uint256 endDate;
         uint256 createdAt;
         uint256 totalVolume;
@@ -89,7 +89,7 @@ contract OracleXMarket {
         market.category = _category;
         market.imageUrl = _imageUrl;
         market.creator = _creator;
-        market.state = MarketState.Pending;
+        market.state = 0;
         market.endDate = _endDate;
         market.createdAt = block.timestamp;
 
@@ -99,17 +99,17 @@ contract OracleXMarket {
     }
 
     function approveMarket() external onlyModerator {
-        require(market.state == MarketState.Pending, "Not pending");
-        market.state = MarketState.Open;
+        require(market.state == 0, "Not pending");
+        market.state = 1;
     }
 
     function rejectMarket() external onlyModerator {
-        require(market.state == MarketState.Pending, "Not pending");
-        market.state = MarketState.Cancelled;
+        require(market.state == 0, "Not pending");
+        market.state = 4;
     }
 
     function placeBet(uint256 _outcomeIndex) external payable {
-        require(market.state == MarketState.Open, "Not open");
+        require(market.state == 1, "Not open");
         require(_outcomeIndex < outcomes.length, "Invalid outcome");
         require(block.timestamp < market.endDate, "Betting ended");
         require(!accessManager.suspendedUsers(msg.sender), "Suspended");
@@ -137,9 +137,9 @@ contract OracleXMarket {
 
     function resolveMarket(uint256 _winningOutcome) external onlyModerator {
         require(_winningOutcome < outcomes.length, "Invalid outcome");
-        require(market.state == MarketState.Locked || market.state == MarketState.Open, "Invalid state");
+        require(market.state == 2 || market.state == 1, "Invalid state");
 
-        market.state = MarketState.Resolved;
+        market.state = 3;
         market.winningOutcome = _winningOutcome;
         market.resolved = true;
 
@@ -156,7 +156,7 @@ contract OracleXMarket {
     }
 
     function claimReward() external {
-        require(market.state == MarketState.Resolved, "Not resolved");
+        require(market.state == 3, "Not resolved");
         require(hasBet[msg.sender], "No bet");
         require(bets[msg.sender].claimedAt == 0, "Already claimed");
 
