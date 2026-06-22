@@ -1,60 +1,53 @@
-require("@nomicfoundation/hardhat-ethers");
-
 async function main() {
-  // Use the private key from env instead of getSigners
-  const { Wallet } = require("ethers");
   const hre = require("hardhat");
+  const privateKey = process.env.PK || "0x0c1dfe99762ae15dcaa1713cbc1b750165a62bb310a148aeea1bf9be8eae3589";
+  const { Wallet } = require("ethers");
   const provider = hre.ethers.provider;
-  const wallet = new Wallet(process.env.DEPLOYER_KEY, provider);
-  console.log("Deploying with account:", wallet.address);
+  const wallet = new Wallet(privateKey, provider);
+  console.log("Deployer:", wallet.address);
 
-  // Deploy AccessManager
-  const AccessManager = await hre.ethers.getContractFactory("OracleXAccessManager", wallet);
-  const accessManager = await AccessManager.deploy(250);
-  await accessManager.waitForDeployment();
-  const am = await accessManager.getAddress();
-  console.log("AccessManager:", am);
+  // 1. AccessManager
+  const AM = await hre.ethers.getContractFactory("OracleXAccessManager", wallet);
+  const am = await AM.deploy(250);
+  await am.waitForDeployment();
+  const amAddr = await am.getAddress();
+  console.log("AccessManager:", amAddr);
 
-  // Deploy Treasury
-  const Treasury = await hre.ethers.getContractFactory("OracleXTreasury", wallet);
-  const treasury = await Treasury.deploy(am);
-  await treasury.waitForDeployment();
-  const tr = await treasury.getAddress();
-  console.log("Treasury:", tr);
+  // 2. Treasury
+  const TR = await hre.ethers.getContractFactory("OracleXTreasury", wallet);
+  const tr = await TR.deploy(amAddr);
+  await tr.waitForDeployment();
+  const trAddr = await tr.getAddress();
+  console.log("Treasury:", trAddr);
 
-  // Deploy Market impl
-  const Market = await hre.ethers.getContractFactory("OracleXMarket", wallet);
-  const marketImpl = await Market.deploy();
-  await marketImpl.waitForDeployment();
-  const mk = await marketImpl.getAddress();
-  console.log("Market:", mk);
+  // 3. Market
+  const MK = await hre.ethers.getContractFactory("OracleXMarket", wallet);
+  const mk = await MK.deploy();
+  await mk.waitForDeployment();
+  const mkAddr = await mk.getAddress();
+  console.log("Market:", mkAddr);
 
-  // Deploy Factory
-  const Factory = await hre.ethers.getContractFactory("OracleXFactory", wallet);
-  const factory = await Factory.deploy(am, mk, tr);
-  await factory.waitForDeployment();
-  const fac = await factory.getAddress();
-  console.log("Factory:", fac);
+  // 4. Factory
+  const FA = await hre.ethers.getContractFactory("OracleXFactory", wallet);
+  const fa = await FA.deploy(amAddr, mkAddr, trAddr);
+  await fa.waitForDeployment();
+  const faAddr = await fa.getAddress();
+  console.log("Factory:", faAddr);
 
-  // Grant moderator
-  const tx1 = await accessManager.addModerator(wallet.address);
-  await tx1.wait();
+  // 5. Grant moderator
+  await (await am.addModerator(wallet.address)).wait();
   console.log("Moderator granted");
 
-  // Create test market
+  // 6. Test market
   const endDate = Math.floor(Date.now() / 1000) + 86400 * 30;
-  const tx2 = await factory.createMarket(
-    "Who wins the Cricket World Cup 2026?",
-    "Predict the winner", "Sports", "",
-    ["Pakistan", "India", "Australia", "England"], endDate
+  const tx = await fa.createMarket(
+    "Who wins the Cricket World Cup 2026?", "Predict the winner",
+    "Sports", "", ["Pakistan", "India", "Australia", "England"], endDate
   );
-  await tx2.wait();
-  console.log("Test market created:", tx2.hash);
+  console.log("Test market created:", tx.hash);
 
-  console.log("\nAccessManager =", am);
-  console.log("Treasury =", tr);
-  console.log("Market =", mk);
-  console.log("Factory =", fac);
+  console.log("\n--- ADDRESSES ---");
+  console.log(amAddr, trAddr, mkAddr, faAddr);
 }
 
 main().catch(console.error);
