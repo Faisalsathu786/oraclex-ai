@@ -1,58 +1,51 @@
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
   console.log("Deploying with account:", deployer.address);
-  console.log("Network:", hre.network.name);
 
-  // Deploy AccessManager
-  const AccessManager = await hre.ethers.getContractFactory("OracleXAccessManager");
-  const accessManager = await AccessManager.deploy(250); // 2.5% fee
+  const AccessManager = await ethers.getContractFactory("OracleXAccessManager");
+  const accessManager = await AccessManager.deploy(250);
   await accessManager.waitForDeployment();
-  const amAddr = await accessManager.getAddress();
-  console.log("AccessManager:", amAddr);
+  const am = await accessManager.getAddress();
+  console.log("AccessManager:", am);
 
-  // Deploy Treasury
-  const Treasury = await hre.ethers.getContractFactory("OracleXTreasury");
-  const treasury = await Treasury.deploy(amAddr);
+  const Treasury = await ethers.getContractFactory("OracleXTreasury");
+  const treasury = await Treasury.deploy(am);
   await treasury.waitForDeployment();
-  const trAddr = await treasury.getAddress();
-  console.log("Treasury:", trAddr);
+  const tr = await treasury.getAddress();
+  console.log("Treasury:", tr);
 
-  // Deploy Market implementation
-  const Market = await hre.ethers.getContractFactory("OracleXMarket");
-  const market = await Market.deploy();
-  await market.waitForDeployment();
-  const mkAddr = await market.getAddress();
-  console.log("Market Impl:", mkAddr);
+  const Market = await ethers.getContractFactory("OracleXMarket");
+  const marketImpl = await Market.deploy();
+  await marketImpl.waitForDeployment();
+  const mk = await marketImpl.getAddress();
+  console.log("Market Impl:", mk);
 
-  // Deploy Factory
-  const Factory = await hre.ethers.getContractFactory("OracleXFactory");
-  const factory = await Factory.deploy(amAddr, mkAddr, trAddr);
+  const Factory = await ethers.getContractFactory("OracleXFactory");
+  const factory = await Factory.deploy(am, mk, tr);
   await factory.waitForDeployment();
-  const facAddr = await factory.getAddress();
-  console.log("Factory:", facAddr);
+  const fac = await factory.getAddress();
+  console.log("Factory:", fac);
 
-  // Setup: grant moderator to deployer
+  // Grant moderator to deployer
   await accessManager.addModerator(deployer.address);
+  console.log("Moderator added");
 
   // Create test market
   const endDate = Math.floor(Date.now() / 1000) + 86400 * 30;
   const tx = await factory.createMarket(
     "Who wins the Cricket World Cup 2026?",
-    "Predict the winner of the upcoming Cricket World Cup.",
-    "Sports", "",
-    ["Pakistan", "India", "Australia", "England"],
-    endDate
+    "Predict the winner", "Sports", "",
+    ["Pakistan", "India", "Australia", "England"], endDate
   );
-  const receipt = await tx.wait();
-  console.log("Test market created. Tx:", receipt.hash);
+  console.log("Market created:", tx.hash);
 
-  console.log("\n=== Deployment Summary ===");
-  console.log("AccessManager:", amAddr);
-  console.log("Treasury:", trAddr);
-  console.log("Market:", mkAddr);
-  console.log("Factory:", facAddr);
+  console.log("\n=== Addresses ===");
+  console.log("AccessManager =", am);
+  console.log("Treasury =", tr);
+  console.log("Market =", mk);
+  console.log("Factory =", fac);
 }
 
 main().catch(console.error);
