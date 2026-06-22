@@ -15,7 +15,6 @@ contract OracleXMarket {
     IAccessManager2 public accessManager;
     address public treasury;
 
-    enum uint256 { Pending, Open, Locked, Resolved, Cancelled }
 
     struct Outcome {
         string name;
