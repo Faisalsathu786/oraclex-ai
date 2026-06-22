@@ -53,6 +53,7 @@ contract OracleXFactory is Initializable, UUPSUpgradeable, AccessControlUpgradea
         string calldata _description,
         string calldata _category,
         string calldata _imageUrl,
+        string[] calldata _outcomeNames,
         string calldata _resolutionSource,
         uint256 _endDate
     ) external returns (address) {
@@ -61,6 +62,7 @@ contract OracleXFactory is Initializable, UUPSUpgradeable, AccessControlUpgradea
         require(bytes(_description).length > 0, "Description required");
         require(_endDate > block.timestamp, "End date must be in future");
         require(!accessManager.suspendedUsers(msg.sender), "User suspended");
+        require(_outcomeNames.length >= 2 && _outcomeNames.length <= 15, "2-15 outcomes");
 
         marketCount++;
         uint256 newMarketId = marketCount;
@@ -78,6 +80,7 @@ contract OracleXFactory is Initializable, UUPSUpgradeable, AccessControlUpgradea
             _description,
             _category,
             _imageUrl,
+            _outcomeNames,
             _resolutionSource,
             _endDate,
             accessManager.protocolFee()

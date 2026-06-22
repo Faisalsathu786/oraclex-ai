@@ -17,6 +17,7 @@ model User {
   bio           String?
   reputation    Int       @default(0)
   xp            Int       @default(0)
+  points        Int       @default(0)
   totalWins     Int       @default(0)
   totalBets     Int       @default(0)
   accuracy      Float     @default(0)
@@ -53,15 +54,12 @@ model Market {
   title            String
   description      String
   category         String
-  resolutionSource String?
   imageUrl         String?
   tags             String[]  @default([])
   state            String    @default("Pending")
-  yesPool          Float     @default(0)
-  noPool           Float     @default(0)
   totalVolume      Float     @default(0)
   participantCount Int       @default(0)
-  outcomeYes       Boolean?
+  winningOutcome   Int?
   resolved         Boolean   @default(false)
   endDate          DateTime
   createdAt        DateTime  @default(now())
@@ -70,22 +68,34 @@ model Market {
 
   creatorId        String
   creator          User      @relation(fields: [creatorId], references: [id])
+  outcomes         Outcome[]
   bets             Bet[]
   aiAnalyses       AIAnalysis[]
   comments         Comment[]
 }
 
-model Bet {
-  id         String   @id @default(cuid())
-  outcome    Boolean
-  amount     Float
-  claimedAt  DateTime?
-  createdAt  DateTime @default(now())
+model Outcome {
+  id        String   @id @default(cuid())
+  name      String
+  pool      Float    @default(0)
+  index     Int
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  marketId   String
-  market     Market   @relation(fields: [marketId], references: [id])
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id])
+}
+
+model Bet {
+  id           String   @id @default(cuid())
+  outcomeIndex Int
+  amount       Float
+  claimedAt    DateTime?
+  pointsEarned Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  marketId     String
+  market       Market   @relation(fields: [marketId], references: [id])
 }
 
 model AIAnalysis {
@@ -97,7 +107,6 @@ model AIAnalysis {
   bearCase      String
   riskFactors   String
   summary       String
-  marketSummary String
   storageHash   String?
   createdAt     DateTime @default(now())
 

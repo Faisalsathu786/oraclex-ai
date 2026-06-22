@@ -5,7 +5,6 @@ async function main() {
   console.log("Deploying with account:", deployer.address);
   console.log("Network:", hre.network.name);
 
-  // Deploy AccessManager
   const AccessManager = await ethers.getContractFactory("OracleXAccessManager");
   const accessManager = await upgrades.deployProxy(AccessManager, [deployer.address, 250], {
     initializer: "initialize",
@@ -13,9 +12,8 @@ async function main() {
   });
   await accessManager.waitForDeployment();
   const accessManagerAddress = await accessManager.getAddress();
-  console.log("OracleXAccessManager deployed to:", accessManagerAddress);
+  console.log("AccessManager:", accessManagerAddress);
 
-  // Deploy Treasury
   const Treasury = await ethers.getContractFactory("OracleXTreasury");
   const treasury = await upgrades.deployProxy(Treasury, [accessManagerAddress], {
     initializer: "initialize",
@@ -23,16 +21,14 @@ async function main() {
   });
   await treasury.waitForDeployment();
   const treasuryAddress = await treasury.getAddress();
-  console.log("OracleXTreasury deployed to:", treasuryAddress);
+  console.log("Treasury:", treasuryAddress);
 
-  // Deploy Market implementation (not upgradeable itself)
   const Market = await ethers.getContractFactory("OracleXMarket");
   const market = await Market.deploy();
   await market.waitForDeployment();
   const marketAddress = await market.getAddress();
-  console.log("OracleXMarket implementation deployed to:", marketAddress);
+  console.log("Market Impl:", marketAddress);
 
-  // Deploy Factory
   const Factory = await ethers.getContractFactory("OracleXFactory");
   const factory = await upgrades.deployProxy(Factory, [accessManagerAddress, marketAddress, treasuryAddress], {
     initializer: "initialize",
@@ -40,10 +36,24 @@ async function main() {
   });
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
-  console.log("OracleXFactory deployed to:", factoryAddress);
+  console.log("Factory:", factoryAddress);
 
-  console.log("\nDeployment Summary:");
-  console.log("-------------------");
+  // Create test market
+  const outcomes = ["Pakistan", "India", "Australia", "England"];
+  const endDate = Math.floor(Date.now() / 1000) + 86400 * 30;
+  const tx = await factory.createMarket(
+    "Who wins the Cricket World Cup?",
+    "Predict the winner of the upcoming Cricket World Cup 2026",
+    "Sports",
+    "",
+    outcomes,
+    "https://example.com/results",
+    endDate
+  );
+  const receipt = await tx.wait();
+  console.log("Test market created");
+
+  console.log("\n=== Deployment Summary ===");
   console.log("AccessManager:", accessManagerAddress);
   console.log("Treasury:", treasuryAddress);
   console.log("Market Implementation:", marketAddress);

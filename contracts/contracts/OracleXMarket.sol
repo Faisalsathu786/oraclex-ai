@@ -13,6 +13,11 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
 
     enum MarketState { Pending, Open, Locked, Resolved, Cancelled, Paused }
 
+    struct Outcome {
+        string name;
+        uint256 pool;
+    }
+
     struct MarketData {
         uint256 id;
         string title;
@@ -24,18 +29,18 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         MarketState state;
         uint256 endDate;
         uint256 createdAt;
-        uint256 yesPool;
-        uint256 noPool;
+        uint256 outcomeCount;
         uint256 totalVolume;
         uint256 participantCount;
-        bool outcomeYes;
+        uint256 winningOutcome;
         bool resolved;
-        uint256 protocolFee; // sell tax in basis points
+        uint256 protocolFee;
+        uint256 totalPoints;
     }
 
     struct Bet {
         address user;
-        bool outcome; // true = YES, false = NO
+        uint256 outcomeIndex;
         uint256 amount;
         uint256 claimedAt;
     }
@@ -44,28 +49,26 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
     uint256 public marketId;
     bool public initialized;
 
+    Outcome[] public outcomes;
     mapping(address => Bet) public bets;
     mapping(address => bool) public hasBet;
     address[] public participants;
+    mapping(address => uint256) public userPoints;
 
-    event MarketCreated(uint256 indexed marketId, address indexed creator, string title);
-    event BetPlaced(uint256 indexed marketId, address indexed user, bool outcome, uint256 amount);
-    event BetSold(uint256 indexed marketId, address indexed user, bool outcome, uint256 amount, uint256 fee);
+    event MarketCreated(uint256 indexed marketId, address indexed creator, string title, uint256 outcomeCount);
+    event BetPlaced(uint256 indexed marketId, address indexed user, uint256 outcomeIndex, uint256 amount);
+    event BetSold(uint256 indexed marketId, address indexed user, uint256 amount, uint256 fee);
     event MarketLocked(uint256 indexed marketId);
-    event MarketResolved(uint256 indexed marketId, bool outcome);
+    event MarketResolved(uint256 indexed marketId, uint256 winningOutcome);
     event RewardClaimed(uint256 indexed marketId, address indexed user, uint256 amount);
     event MarketCancelled(uint256 indexed marketId);
+    event PointsAwarded(address indexed user, uint256 points);
 
     modifier onlyModerator() {
         require(
             accessManager.isModerator(msg.sender) || accessManager.isSuperAdmin(msg.sender),
             "Not authorized"
         );
-        _;
-    }
-
-    modifier onlyCreator() {
-        require(msg.sender == market.creator, "Not market creator");
         _;
     }
 
@@ -83,11 +86,13 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         string calldata _description,
         string calldata _category,
         string calldata _imageUrl,
+        string[] calldata _outcomeNames,
         string calldata _resolutionSource,
         uint256 _endDate,
         uint256 _protocolFee
     ) external initializer {
         require(!initialized, "Already initialized");
+        require(_outcomeNames.length >= 2 && _outcomeNames.length <= 15, "2-15 outcomes required");
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
 
@@ -108,16 +113,20 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
             state: MarketState.Pending,
             endDate: _endDate,
             createdAt: block.timestamp,
-            yesPool: 0,
-            noPool: 0,
+            outcomeCount: _outcomeNames.length,
             totalVolume: 0,
             participantCount: 0,
-            outcomeYes: false,
+            winningOutcome: 999,
             resolved: false,
-            protocolFee: _protocolFee
+            protocolFee: _protocolFee,
+            totalPoints: 0
         });
 
-        emit MarketCreated(_marketId, _creator, _title);
+        for (uint256 i = 0; i < _outcomeNames.length; i++) {
+            outcomes.push(Outcome({ name: _outcomeNames[i], pool: 0 }));
+        }
+
+        emit MarketCreated(_marketId, _creator, _title, _outcomeNames.length);
     }
 
     function approveMarket() external onlyModerator {
@@ -126,39 +135,43 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         market.state = MarketState.Open;
     }
 
-    function rejectMarket(string calldata reason) external onlyModerator {
+    function rejectMarket() external onlyModerator {
         require(market.state == MarketState.Pending, "Not pending");
         market.state = MarketState.Cancelled;
         emit MarketCancelled(marketId);
     }
 
-    function placeBet(bool _outcome) external payable nonReentrant {
+    function placeBet(uint256 _outcomeIndex) external payable nonReentrant {
         require(market.state == MarketState.Open, "Market not open");
+        require(_outcomeIndex < market.outcomeCount, "Invalid outcome");
         require(block.timestamp < market.endDate, "Betting ended");
         require(!accessManager.suspendedUsers(msg.sender), "User suspended");
-        require(!hasBet[msg.sender], "Already bet");
         require(msg.value > 0, "Amount must be > 0");
 
-        bets[msg.sender] = Bet({
-            user: msg.sender,
-            outcome: _outcome,
-            amount: msg.value,
-            claimedAt: 0
-        });
-
-        hasBet[msg.sender] = true;
-        participants.push(msg.sender);
-
-        if (_outcome) {
-            market.yesPool += msg.value;
+        if (hasBet[msg.sender]) {
+            // Add to existing bet
+            Bet storage existing = bets[msg.sender];
+            require(existing.outcomeIndex == _outcomeIndex, "Already bet on different outcome");
+            existing.amount += msg.value;
         } else {
-            market.noPool += msg.value;
+            bets[msg.sender] = Bet({
+                user: msg.sender,
+                outcomeIndex: _outcomeIndex,
+                amount: msg.value,
+                claimedAt: 0
+            });
+            hasBet[msg.sender] = true;
+            participants.push(msg.sender);
+            market.participantCount = participants.length;
         }
 
+        outcomes[_outcomeIndex].pool += msg.value;
         market.totalVolume += msg.value;
-        market.participantCount = participants.length;
 
-        emit BetPlaced(marketId, msg.sender, _outcome, msg.value);
+        // Points: 1 point per $10 volume
+        _awardPoints(msg.sender, msg.value);
+
+        emit BetPlaced(marketId, msg.sender, _outcomeIndex, msg.value);
     }
 
     function sellShares() external nonReentrant {
@@ -167,41 +180,35 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         require(bets[msg.sender].claimedAt == 0, "Already sold");
 
         Bet storage userBet = bets[msg.sender];
-        uint256 sellAmount = userBet.amount;
-        uint256 sellPool = userBet.outcome ? market.yesPool : market.noPool;
-        uint256 totalPool = market.yesPool + market.noPool;
+        uint256 sellPool = outcomes[userBet.outcomeIndex].pool;
+        require(sellPool > 0, "Empty pool");
+        require(userBet.amount <= sellPool, "Amount exceeds pool");
 
-        require(sellPool >= sellAmount, "Insufficient pool");
+        // Calculate total pool across all outcomes
+        uint256 totalPool = 0;
+        for (uint256 i = 0; i < market.outcomeCount; i++) {
+            totalPool += outcomes[i].pool;
+        }
 
-        // Calculate buyback value: what user gets when selling
-        // If YES pool = 60% and NO pool = 40%, YES shares are worth more
-        uint256 shareValue = (sellAmount * totalPool) / sellPool;
+        // Share value = (bet amount / outcome pool) * total pool
+        uint256 shareValue = (userBet.amount * totalPool) / sellPool;
         uint256 sellFee = (shareValue * market.protocolFee) / 10000;
         uint256 payout = shareValue - sellFee;
 
-        // Mark as claimed (sold)
         userBet.claimedAt = block.timestamp;
+        outcomes[userBet.outcomeIndex].pool -= userBet.amount;
 
-        // Update pools - remove share from the pool
-        if (userBet.outcome) {
-            market.yesPool -= sellAmount;
-        } else {
-            market.noPool -= sellAmount;
-        }
-
-        // Send fee to treasury
         if (sellFee > 0 && treasury != address(0)) {
             (bool feeSent, ) = payable(treasury).call{value: sellFee}("");
             require(feeSent, "Fee transfer failed");
         }
 
-        // Send payout to seller
         if (payout > 0) {
             (bool success, ) = payable(msg.sender).call{value: payout}("");
             require(success, "Sell transfer failed");
         }
 
-        emit BetSold(marketId, msg.sender, userBet.outcome, sellAmount, sellFee);
+        emit BetSold(marketId, msg.sender, userBet.amount, sellFee);
     }
 
     function lockMarket() external {
@@ -211,14 +218,25 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         emit MarketLocked(marketId);
     }
 
-    function resolveMarket(bool _outcome) external onlyModerator {
+    function resolveMarket(uint256 _winningOutcome) external onlyModerator {
+        require(_winningOutcome < market.outcomeCount, "Invalid outcome");
         require(market.state == MarketState.Locked || market.state == MarketState.Open, "Invalid state");
 
         market.state = MarketState.Resolved;
-        market.outcomeYes = _outcome;
+        market.winningOutcome = _winningOutcome;
         market.resolved = true;
 
-        emit MarketResolved(marketId, _outcome);
+        // Transfer loser pools to winner pool
+        uint256 winnerPool = outcomes[_winningOutcome].pool;
+        for (uint256 i = 0; i < market.outcomeCount; i++) {
+            if (i != _winningOutcome) {
+                winnerPool += outcomes[i].pool;
+                outcomes[i].pool = 0;
+            }
+        }
+        outcomes[_winningOutcome].pool = winnerPool;
+
+        emit MarketResolved(marketId, _winningOutcome);
     }
 
     function emergencyCancel() external onlyModerator {
@@ -233,27 +251,19 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         require(bets[msg.sender].claimedAt == 0, "Already claimed");
 
         Bet storage userBet = bets[msg.sender];
+        require(userBet.outcomeIndex == market.winningOutcome, "Not a winning bet");
         userBet.claimedAt = block.timestamp;
 
-        uint256 reward = 0;
-        bool userWon = (userBet.outcome == market.outcomeYes);
+        uint256 totalPool = outcomes[market.winningOutcome].pool;
+        uint256 winnerPoolBefore = totalPool - _getLoserPoolTotal();
+        uint256 fee = (totalPool * market.protocolFee) / 10000;
+        uint256 prizePool = totalPool - fee;
 
-        if (userWon) {
-            uint256 winnerPool = market.outcomeYes ? market.yesPool : market.noPool;
-            uint256 loserPool = market.outcomeYes ? market.noPool : market.yesPool;
-            uint256 totalPrize = winnerPool + loserPool;
-            uint256 fee = (totalPrize * market.protocolFee) / 10000;
-            uint256 prizePool = totalPrize - fee;
+        uint256 reward = (userBet.amount * prizePool) / winnerPoolBefore;
 
-            reward = (userBet.amount * prizePool) / winnerPool;
-
-            if (fee > 0 && treasury != address(0)) {
-                (bool feeSent, ) = payable(treasury).call{value: fee}("");
-                require(feeSent, "Fee transfer failed");
-            }
-        } else {
-            // Losers get nothing (their funds go to winners)
-            reward = 0;
+        if (fee > 0 && treasury != address(0)) {
+            (bool feeSent, ) = payable(treasury).call{value: fee}("");
+            require(feeSent, "Fee transfer failed");
         }
 
         if (reward > 0) {
@@ -264,6 +274,16 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
         emit RewardClaimed(marketId, msg.sender, reward);
     }
 
+    function _getLoserPoolTotal() internal view returns (uint256) {
+        uint256 total = 0;
+        for (uint256 i = 0; i < market.outcomeCount; i++) {
+            if (i != market.winningOutcome) {
+                total += outcomes[i].pool;
+            }
+        }
+        return total;
+    }
+
     function refundIfCancelled() external nonReentrant {
         require(market.state == MarketState.Cancelled, "Not cancelled");
         require(hasBet[msg.sender], "No bet");
@@ -271,39 +291,50 @@ contract OracleXMarket is Initializable, UUPSUpgradeable, ReentrancyGuardUpgrade
 
         Bet storage userBet = bets[msg.sender];
         userBet.claimedAt = block.timestamp;
-        uint256 refundAmount = userBet.amount;
 
-        (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+        (bool success, ) = payable(msg.sender).call{value: userBet.amount}("");
         require(success, "Refund failed");
     }
 
+    function _awardPoints(address _user, uint256 _volumeWei) internal {
+        uint256 volumeUsd = _volumeWei / 1e18; // Assuming 1 token = $1
+        uint256 points = volumeUsd / 10; // 1 point per $10 volume
+        if (points > 0) {
+            userPoints[_user] += points;
+            market.totalPoints += points;
+            emit PointsAwarded(_user, points);
+        }
+    }
+
+    function getOutcomes() external view returns (Outcome[] memory) {
+        return outcomes;
+    }
+
+    function getOutcomeCount() external view returns (uint256) {
+        return outcomes.length;
+    }
+
+    function getOutcome(uint256 index) external view returns (string memory name, uint256 pool) {
+        require(index < outcomes.length, "Invalid index");
+        return (outcomes[index].name, outcomes[index].pool);
+    }
+
     function getMarketStats() external view returns (
-        uint256 yesPool,
-        uint256 noPool,
-        uint256 totalLiquidity,
-        uint256 currentProbability,
-        uint256 volume,
+        uint256[] memory pools,
+        uint256 totalVolume,
         uint256 participantCount,
         MarketState state,
         uint256 endDate
     ) {
-        uint256 total = market.yesPool + market.noPool;
-        uint256 prob = total > 0 ? (market.yesPool * 100) / total : 50;
-
-        return (
-            market.yesPool,
-            market.noPool,
-            total,
-            prob,
-            market.totalVolume,
-            market.participantCount,
-            market.state,
-            market.endDate
-        );
+        pools = new uint256[](outcomes.length);
+        for (uint256 i = 0; i < outcomes.length; i++) {
+            pools[i] = outcomes[i].pool;
+        }
+        return (pools, market.totalVolume, market.participantCount, market.state, market.endDate);
     }
 
-    function getParticipantCount() external view returns (uint256) {
-        return participants.length;
+    function getUserPoints(address _user) external view returns (uint256) {
+        return userPoints[_user];
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyModerator {}
