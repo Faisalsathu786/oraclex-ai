@@ -47,10 +47,10 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 -mt-8 relative z-20">
         <div className="glass-card grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
           {[
-            { label: 'Active Markets', value: '$2.4M' },
-            { label: 'Total Volume', value: '$15.7M' },
-            { label: 'Total Traders', value: '8.2K' },
-            { label: 'AI Analyses', value: '12.5K' },
+            { label: 'Contracts Deployed', value: '4' },
+            { label: 'Test Market Created', value: '1' },
+            { label: '0G Products Used', value: '3' },
+            { label: 'Hackathon Entry', value: 'Ready' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}

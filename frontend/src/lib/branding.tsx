@@ -16,7 +16,7 @@ const defaultBranding: BrandingConfig = {
   logoUrl: '',
   logoText: 'OracleX AI',
   primaryColor: '#6c3bf5',
-  backgroundColor: '#0a0a1a',
+  backgroundColor: '#000000',
   cardStyle: 'glass',
   heroImage: '',
   faviconUrl: '',
