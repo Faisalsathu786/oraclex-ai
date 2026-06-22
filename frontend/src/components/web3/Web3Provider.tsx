@@ -2,25 +2,16 @@
 
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState, useEffect, ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { getConfig } from '@/lib/wagmi'
 
+const WC_PROJECT_ID = 'e65e0e8ee0b354919610b744401ec152'
 const queryClient = new QueryClient()
+const wagmiConfig = getConfig(WC_PROJECT_ID)
 
 export function Web3Provider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<any>(null)
-
-  useEffect(() => {
-    const pid = localStorage.getItem('wc_project_id') || process.env.NEXT_PUBLIC_WC_PROJECT_ID
-    if (pid) {
-      setConfig(getConfig(pid))
-    }
-  }, [])
-
-  if (!config) return <>{children}</>
-
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>

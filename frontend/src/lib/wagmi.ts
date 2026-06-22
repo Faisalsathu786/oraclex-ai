@@ -1,4 +1,6 @@
-import { http, createConfig } from 'wagmi'
+import { createConfig, http } from 'wagmi'
+import { mainnet } from 'wagmi/chains'
+import { injected, walletConnect } from 'wagmi/connectors'
 import { CHAIN } from '@/lib/config'
 
 export const zeroGChain = {
@@ -12,6 +14,12 @@ export const zeroGChain = {
 export function getConfig(projectId: string) {
   return createConfig({
     chains: [zeroGChain],
-    transports: { [zeroGChain.id]: http() },
+    connectors: [
+      injected(),
+      walletConnect({ projectId }),
+    ],
+    transports: {
+      [zeroGChain.id]: http(),
+    },
   })
 }
