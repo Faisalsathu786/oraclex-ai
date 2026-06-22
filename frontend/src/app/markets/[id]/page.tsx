@@ -106,6 +106,33 @@ export default function MarketDetailPage() {
               </div>
             </div>
           </motion.div>
+
+          {/* Comments */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6">
+            <h3 className="font-semibold mb-4">Discussion</h3>
+            <div className="flex gap-3 mb-4">
+              <input type="text" placeholder="Share your thoughts on this market..." className="input-field flex-1" />
+              <button className="btn-primary whitespace-nowrap">Post</button>
+            </div>
+            <div className="space-y-4">
+              {[
+                { user: 'CryptoWhale', comment: 'BTC has strong momentum. I am confident on this one.', time: '1 hour ago' },
+                { user: 'AI Prophet', comment: 'Bearish signals from macro conditions. Be careful with large positions.', time: '3 hours ago' },
+                { user: 'Market Sage', comment: 'The expanded format increases chances. Good market to watch.', time: '5 hours ago' },
+              ].map((c) => (
+                <div key={c.user + c.time} className="p-3 rounded-xl bg-secondary/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                      {c.user[0]}
+                    </div>
+                    <span className="text-sm font-medium">{c.user}</span>
+                    <span className="text-xs text-muted-foreground">{c.time}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-8">{c.comment}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
 
         {/* Trading Panel */}
