@@ -115,10 +115,10 @@ Two AI agents debate each prediction:
 
 | Contract | Address | Network |
 |----------|---------|---------|
-| OracleXAccessManager | TBD after deploy | 0G Mainnet |
-| OracleXTreasury | TBD after deploy | 0G Mainnet |
-| OracleXMarket | TBD after deploy | 0G Mainnet |
-| OracleXFactory | TBD after deploy | 0G Mainnet |
+| OracleXAccessManager | `0xFd3F03b75C16BD7fb97C89d634AA26C484d2A7A0` | 0G Mainnet |
+| OracleXTreasury | `0xe83F0A373EadE57899f07A457211dedeE85b3F4D` | 0G Mainnet |
+| OracleXMarket | `0x2BFF6E6f3EC4A8E82b5a14db37A21bf176C9cbed` | 0G Mainnet |
+| OracleXFactory | `0xb948466cf5c6da634C9D5ad85f6a133267aD7030` | 0G Mainnet |
 
 ## Getting Started
 
