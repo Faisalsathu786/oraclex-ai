@@ -1,17 +1,1 @@
-{
-  "name": "oraclex-contracts",
-  "version": "1.0.0",
-  "description": "OracleX AI smart contracts for 0G Chain",
-  "scripts": {
-    "compile": "npx hardhat compile",
-    "deploy:testnet": "npx hardhat run scripts/deploy.js --network 0g-testnet",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network 0g-mainnet",
-    "test": "npx hardhat test"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@openzeppelin/contracts-upgradeable": "^5.0.0",
-    "@openzeppelin/hardhat-upgrades": "^3.0.0",
-    "hardhat": "^2.19.0"
-  }
-}
+{"name":"tmp","devDependencies":{"hardhat":"^2.19.0","@openzeppelin/contracts":"4.9.6","ethers":"^6.9.0"}}
