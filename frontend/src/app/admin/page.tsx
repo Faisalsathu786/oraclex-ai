@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { BarChart3, Users, Settings, Shield, TrendingUp, DollarSign, Flag, PieChart, Activity, Gavel, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-const tabs = ['Overview', 'Markets', 'Users', 'Treasury', 'Settings']
+const tabs = ['Overview', 'Markets', 'Users', 'Treasury', 'Branding', 'Settings']
 
 const pendingMarkets = [
   { id: 1, title: 'BTC reaches $200K?', creator: '0x1234...5678', category: 'Crypto', createdAt: '2 hours ago' },
@@ -207,8 +207,79 @@ export default function AdminPage() {
         </div>
       )}
 
+      {activeTab === 'Branding' && (
+        <div className="max-w-2xl space-y-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">Project Branding</h3>
+            <p className="text-sm text-muted-foreground mb-6">Customize how OracleX AI looks to all users. Changes applied instantly.</p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Logo Text</label>
+                  <input type="text" defaultValue="OracleX AI" className="input-field" />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Logo Image URL</label>
+                  <input type="url" placeholder="https://example.com/logo.png" className="input-field" />
+                  <p className="text-xs text-muted-foreground mt-1">Leave empty to use text logo</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Favicon URL</label>
+                  <input type="url" placeholder="https://example.com/favicon.ico" className="input-field" />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Primary Theme Color</label>
+                  <div className="flex gap-2 items-center">
+                    <input type="color" defaultValue="#6c3bf5" className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-border" />
+                    <span className="text-sm font-mono text-muted-foreground">#6c3bf5</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Background Color</label>
+                  <div className="flex gap-2 items-center">
+                    <input type="color" defaultValue="#0a0a1a" className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-border" />
+                    <span className="text-sm font-mono text-muted-foreground">#0a0a1a</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Hero Background Image URL</label>
+                  <input type="url" placeholder="https://example.com/hero.jpg" className="input-field" />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Card Style</label>
+                  <div className="flex gap-2">
+                    <button className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium">Glass</button>
+                    <button className="px-4 py-2 rounded-xl bg-secondary text-muted-foreground text-sm font-medium">Solid</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-border">
+              <h4 className="text-sm font-semibold mb-2">Preview</h4>
+              <div className="glass-card p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold">X</div>
+                <div>
+                  <div className="font-semibold">OracleX AI</div>
+                  <div className="text-xs text-muted-foreground">Changes appear immediately to all users</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button className="btn-primary">Save Branding</button>
+              <button className="btn-secondary">Reset to Default</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {activeTab === 'Settings' && (
-        <div className="glass-card p-6 max-w-md space-y-4">
+        <div className="glass-card p-6 max-w-2xl space-y-4">
           <h3 className="font-semibold mb-4 flex items-center gap-2"><Settings size={18} className="text-primary" />Protocol Settings</h3>
           <div className="flex items-center justify-between py-3 border-b border-border">
             <span className="text-sm">Protocol Active</span>
