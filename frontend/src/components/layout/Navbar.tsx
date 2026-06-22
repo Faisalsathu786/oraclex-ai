@@ -19,7 +19,8 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-1">
               <Link href="/markets" className="btn-ghost text-sm">Explore</Link>
               <Link href="/leaderboard" className="btn-ghost text-sm">Leaderboard</Link>
-              <Link href="/create" className="btn-ghost text-sm">Create Market</Link>
+              <Link href="/portfolio" className="btn-ghost text-sm">Portfolio</Link>
+              <Link href="/admin" className="btn-ghost text-sm">Admin</Link>
             </div>
           </div>
 
