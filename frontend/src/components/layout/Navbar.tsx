@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, X, ChevronDown } from 'lucide-react'
+import { WalletButton } from '@/components/web3/WalletButton'
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -26,7 +27,7 @@ export function Navbar() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link href="/dashboard" className="btn-ghost text-sm">Dashboard</Link>
-            <Link href="/api/auth/login" className="btn-primary text-sm py-2 px-4">Launch App</Link>
+            <WalletButton />
           </div>
 
           <button className="md:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
