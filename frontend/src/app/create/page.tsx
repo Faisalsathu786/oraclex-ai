@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Calendar,
   Image as ImageIcon,
   Loader2,
   Check,
@@ -31,6 +30,7 @@ export default function CreateMarketPage() {
   const [category, setCategory] = useState('Crypto')
   const [imageUrl, setImageUrl] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [outcomes, setOutcomes] = useState<string[]>(['Yes', 'No'])
 
   const [submitting, setSubmitting] = useState(false)
@@ -83,6 +83,7 @@ export default function CreateMarketPage() {
     if (!title.trim()) { setError('Title is required'); return }
     if (outcomes.filter((o) => o.trim()).length < 2) { setError('At least 2 outcomes required'); return }
     if (!endDate) { setError('End date is required'); return }
+    if (!endTime) { setError('End time is required'); return }
 
     setError('')
     setSubmitting(true)
@@ -90,7 +91,7 @@ export default function CreateMarketPage() {
     setTxHash('')
 
     try {
-      const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000)
+    const endTimestamp = Math.floor(new Date(`${endDate}T${endTime || '23:59'}`).getTime() / 1000)
       const outcomeNames = outcomes.filter((o) => o.trim())
 
       const factory = getFactoryContract(signer)
@@ -188,24 +189,35 @@ export default function CreateMarketPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Date & Time</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Date</label>
               <input
-                type="datetime-local"
+                type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
                 className="input-field text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Image URL (optional)</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Time</label>
               <input
-                type="url"
-                placeholder="https://..."
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
                 className="input-field text-sm"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Image URL (optional)</label>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              className="input-field text-sm"
+            />
           </div>
 
           <div>
