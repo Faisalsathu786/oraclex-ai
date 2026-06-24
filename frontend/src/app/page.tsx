@@ -190,10 +190,10 @@ function MarketsTab() {
       {!loading && !error && filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((m, i) => (
-            <Link key={m.address} href={`/markets/${i}`}>
+            <Link key={m.address} href={`/markets/${Number(m.data.id)}`}>
               <div className="glass-card p-5 rounded-2xl hover:border-zinc-600 hover:bg-zinc-900/30 transition-all cursor-pointer h-full flex flex-col justify-between group">
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-3 mb-3">
                     <StateBadge state={m.data.state} />
                     <span className="text-xs text-zinc-500">{m.data.category}</span>
                   </div>

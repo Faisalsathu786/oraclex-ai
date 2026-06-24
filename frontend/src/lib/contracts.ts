@@ -86,6 +86,8 @@ export async function fetchAllMarkets(provider?: BrowserProvider): Promise<{ add
   for (let i = 0; i < Number(count); i++) {
     try {
       const addr: string = await factory.allMarkets(i)
+      // Skip zero-address entries (markets that don't exist at this array index)
+      if (!addr || addr === '0x0000000000000000000000000000000000000000') continue
       const mc = getMarketContract(addr, rpc)
       const raw = await mc.market()
 
