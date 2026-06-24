@@ -777,7 +777,7 @@ function AppHeader({ activeTab, setActiveTab }: { activeTab: string; setActiveTa
               <button
                 key={t}
                 onClick={() => setActiveTab(t)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-6 py-2 rounded-xl text-base font-medium transition-colors ${
                   activeTab === t ? 'text-white bg-zinc-800' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -802,16 +802,43 @@ function AppHeader({ activeTab, setActiveTab }: { activeTab: string; setActiveTa
 // ─── MAIN PAGE ──────────────────────────────────────────────────────
 
 export default function Home() {
-  const { isConnected, address } = useWallet()
+  const { isConnected, address, chainId } = useWallet()
   const [activeTab, setActiveTab] = useState('Markets')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const { isOwnerWallet } = useWallet()
   const showTabs = isOwnerWallet ? TABS : TABS.slice(0, 3)
 
+  // Chain warning
+  const onWrongChain = isConnected && chainId !== 0 && chainId !== CHAIN.chainId
+
   useEffect(() => {
     setMobileNavOpen(false)
   }, [activeTab])
+
+  const handleSwitchChain = async () => {
+    if (window.ethereum) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x4115' }],
+        })
+      } catch (e: any) {
+        if (e.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x4115',
+              chainName: '0G Mainnet (Aristotle)',
+              nativeCurrency: { name: '0G', symbol: '0G', decimals: 18 },
+              rpcUrls: ['https://evmrpc.0g.ai'],
+              blockExplorerUrls: ['https://chainscan.0g.ai'],
+            }],
+          })
+        }
+      }
+    }
+  }
 
   if (!isConnected) {
     return <LandingPage />
@@ -820,6 +847,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white">
       <AppHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Chain Warning */}
+      {onWrongChain && (
+        <div className="border-b border-yellow-800 bg-yellow-500/5">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-yellow-300">
+              <AlertTriangle size={16} />
+              <span>Wrong network detected — please switch to <strong>0G Mainnet</strong></span>
+            </div>
+            <button
+              onClick={handleSwitchChain}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium bg-yellow-600 text-white hover:bg-yellow-500 transition-colors"
+            >
+              Switch to 0G
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Tabs */}
       <div className="md:hidden border-b border-zinc-800 px-4 py-2">
