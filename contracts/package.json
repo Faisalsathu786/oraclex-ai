@@ -1,14 +1,1 @@
-{
-  "name": "oraclex-contracts",
-  "version": "1.0.0",
-  "scripts": {
-    "compile": "npx hardhat compile",
-    "deploy:testnet": "npx hardhat run scripts/deploy.js --network 0g-testnet",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network 0g-mainnet"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "@openzeppelin/contracts": "4.9.6",
-    "hardhat": "^2.19.0"
-  }
-}
+{"name":"t","private":true,"devDependencies":{"hardhat":"^2.19.0","@nomicfoundation/hardhat-toolbox":"^4.0.0","@openzeppelin/contracts":"4.9.6","ethers":"^6.9.0"}}

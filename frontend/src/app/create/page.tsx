@@ -1,30 +1,75 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, Globe, Image, Plus, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useWallet } from '@/components/web3/Web3Provider'
+import { CHAIN } from '@/lib/config'
+import { getFactoryContract, isOwner, OWNER_WALLET } from '@/lib/contracts'
+import { parseUnits } from 'ethers'
+import {
+  ArrowLeft,
+  Plus,
+  X,
+  Calendar,
+  Image as ImageIcon,
+  Loader2,
+  Check,
+  AlertTriangle,
+  ExternalLink,
+  Wallet,
+} from 'lucide-react'
 
-const categories = ['Crypto', 'Sports', 'Politics', 'AI', 'Finance', 'Entertainment', 'Custom']
+const CATEGORIES = ['Crypto', 'Sports', 'DeFi', 'Politics', 'Entertainment', 'Technology', 'Science']
 
 export default function CreateMarketPage() {
+  const router = useRouter()
+  const { signer, address, isConnected, connect } = useWallet()
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('Crypto')
   const [imageUrl, setImageUrl] = useState('')
-  const [resolutionSource, setResolutionSource] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [outcomes, setOutcomes] = useState<string[]>(['', ''])
+  const [outcomes, setOutcomes] = useState<string[]>(['Yes', 'No'])
+
+  const [submitting, setSubmitting] = useState(false)
+  const [txHash, setTxHash] = useState('')
+  const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <Wallet size={40} className="mx-auto mb-4 text-zinc-600" />
+          <p className="text-zinc-400 mb-4">Connect your wallet to create a market</p>
+          <button onClick={connect} className="px-5 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+            Connect Wallet
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isOwner(address)) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle size={40} className="mx-auto mb-4 text-red-400" />
+          <p className="text-zinc-400 mb-4">Only the platform owner can create markets</p>
+          <Link href="/" className="text-sm text-purple-400 hover:text-purple-300">← Back to home</Link>
+        </div>
+      </div>
+    )
+  }
 
   const addOutcome = () => {
-    if (outcomes.length < 15) {
-      setOutcomes([...outcomes, ''])
-    }
+    if (outcomes.length < 15) setOutcomes([...outcomes, ''])
   }
 
   const removeOutcome = (index: number) => {
-    if (outcomes.length > 2) {
-      setOutcomes(outcomes.filter((_, i) => i !== index))
-    }
+    if (outcomes.length > 2) setOutcomes(outcomes.filter((_, i) => i !== index))
   }
 
   const updateOutcome = (index: number, value: string) => {
@@ -33,83 +78,106 @@ export default function CreateMarketPage() {
     setOutcomes(updated)
   }
 
+  const handleSubmit = async () => {
+    if (!signer) return
+    if (!title.trim()) { setError('Title is required'); return }
+    if (outcomes.filter((o) => o.trim()).length < 2) { setError('At least 2 outcomes required'); return }
+    if (!endDate) { setError('End date is required'); return }
+
+    setError('')
+    setSubmitting(true)
+    setStatus('Creating market...')
+    setTxHash('')
+
+    try {
+      const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000)
+      const outcomeNames = outcomes.filter((o) => o.trim())
+
+      const factory = getFactoryContract(signer)
+      const tx = await factory.createMarket(
+        title.trim(),
+        description.trim(),
+        category,
+        imageUrl.trim(),
+        outcomeNames,
+        endTimestamp
+      )
+      setStatus('Waiting for confirmation...')
+      await tx.wait()
+      setTxHash(tx.hash)
+      setStatus('Market created successfully!')
+
+      // Reset form
+      setTimeout(() => {
+        router.push('/')
+      }, 2000)
+    } catch (e: any) {
+      setError(e.message?.slice(0, 120) || 'Transaction failed')
+      setStatus('')
+    }
+    setSubmitting(false)
+  }
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Create Market</h1>
-        <p className="text-muted-foreground mt-1">Admin panel - create new prediction market with multiple outcomes</p>
+    <div className="min-h-screen bg-black text-white">
+      <div className="border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+            <ArrowLeft size={16} /> Back
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
+            <span className="text-sm font-bold">OracleX</span>
+          </div>
+        </div>
       </div>
 
-      <div className="glass-card p-8 space-y-6">
-        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-          <p className="text-sm text-primary font-medium">
-            Only platform moderators and administrators can create markets. Each market supports 2 to 15 outcomes.
-          </p>
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold">Create Market</h1>
+          <p className="text-sm text-zinc-500 mt-1">Deploy a new prediction market on 0G</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Market Title</label>
-          <input
-            type="text"
-            placeholder="e.g., Who will win the Cricket World Cup 2026?"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="input-field"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Description</label>
-          <textarea
-            placeholder="Describe the market conditions, resolution criteria..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            rows={3}
-            className="input-field resize-none"
-          />
-        </div>
-
-        {/* Outcomes Section */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">Outcomes ({outcomes.length}/15)</label>
-            {outcomes.length < 15 && (
-              <button onClick={addOutcome} className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors">
-                <Plus size={16} /> Add Outcome
-              </button>
-            )}
+        <div className="glass-card p-6 space-y-5">
+          <div className="px-4 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+            <p className="text-xs text-purple-300">
+              You are creating a market as the platform owner. Supports 2-15 outcomes.
+            </p>
           </div>
-          <div className="space-y-2">
-            {outcomes.map((outcome, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-6 text-right">{index + 1}.</span>
-                <input
-                  type="text"
-                  placeholder={`Outcome ${index + 1} (e.g., Pakistan, India, Australia...)`}
-                  value={outcome}
-                  onChange={e => updateOutcome(index, e.target.value)}
-                  className="input-field flex-1"
-                />
-                {outcomes.length > 2 && (
-                  <button onClick={() => removeOutcome(index)} className="text-destructive hover:text-destructive/80 p-1">
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Category</label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Title</label>
+            <input
+              type="text"
+              placeholder="e.g., Will Bitcoin reach $200,000 in 2026?"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="input-field text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Description</label>
+            <textarea
+              placeholder="Describe the resolution criteria and context..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="input-field resize-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Category</label>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                    category === cat ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    category === cat
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {cat}
@@ -117,48 +185,103 @@ export default function CreateMarketPage() {
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">End Date & Time</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field pl-10" />
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Date & Time</label>
+              <input
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="input-field text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Image URL (optional)</label>
+              <input
+                type="url"
+                placeholder="https://..."
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="input-field text-sm"
+              />
             </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Market Image URL</label>
-          <div className="relative">
-            <Image className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input type="url" placeholder="https://example.com/market-image.jpg" value={imageUrl} onChange={e => setImageUrl(e.target.value)} className="input-field pl-10" />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-zinc-400">Outcomes ({outcomes.length}/15)</label>
+              {outcomes.length < 15 && (
+                <button onClick={addOutcome} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                  <Plus size={13} /> Add
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {outcomes.map((outcome, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-600 w-5 text-right">{i + 1}.</span>
+                  <input
+                    type="text"
+                    placeholder={`Outcome ${i + 1}`}
+                    value={outcome}
+                    onChange={(e) => updateOutcome(i, e.target.value)}
+                    className="input-field flex-1 text-sm"
+                  />
+                  {outcomes.length > 2 && (
+                    <button onClick={() => removeOutcome(i)} className="p-1 text-red-400 hover:text-red-300 transition-colors">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          {imageUrl && (
-            <div className="mt-2 rounded-xl overflow-hidden h-32 bg-surface border border-border">
-              <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+
+          {error && (
+            <div className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2">
+              <AlertTriangle size={14} /> {error}
             </div>
           )}
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Resolution Source</label>
-          <div className="relative">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <input type="url" placeholder="https://..." value={resolutionSource} onChange={e => setResolutionSource(e.target.value)} className="input-field pl-10" />
+          {status && (
+            <div className={`px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 ${
+              status.includes('success')
+                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                : 'bg-zinc-800 text-zinc-300'
+            }`}>
+              {status.includes('success') ? <Check size={14} /> : <Loader2 size={14} className="animate-spin" />}
+              {status}
+            </div>
+          )}
+
+          {txHash && (
+            <a
+              href={`${CHAIN.explorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300"
+            >
+              <ExternalLink size={12} /> View transaction on explorer
+            </a>
+          )}
+
+          <div className="pt-4 border-t border-zinc-800 flex items-center gap-3">
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !signer}
+              className="btn-primary flex-1 text-sm disabled:opacity-40"
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" /> Creating...
+                </span>
+              ) : (
+                'Publish Market'
+              )}
+            </button>
+            <Link href="/" className="btn-secondary text-sm">Cancel</Link>
           </div>
-        </div>
-
-        <div className="rounded-xl bg-surface border border-border p-4">
-          <h4 className="text-sm font-semibold mb-2">Fee Structure</h4>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>- Buy shares: No fees</p>
-            <p>- Sell shares: Protocol fee (sell tax) applies</p>
-            <p>- On resolution: Loser pools distribute to winners</p>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border flex items-center gap-3">
-          <button className="btn-primary flex-1">Publish Market</button>
-          <Link href="/markets" className="btn-secondary">Cancel</Link>
         </div>
       </div>
     </div>

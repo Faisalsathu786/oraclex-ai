@@ -22,41 +22,79 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 }
 
 @layer components {
-  .page-wrap {
-    @apply max-w-7xl mx-auto px-6 py-10;
+  .glass-card {
+    @apply border border-border rounded-2xl;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
   }
 
-  .sec-title {
-    @apply text-sm font-semibold tracking-wide text-muted-foreground uppercase mb-6;
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
   }
 
-  .stat-card {
-    @apply p-5 border border-border rounded-2xl;
+  .glass-card-hover:hover {
+    @apply border-primary/30;
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.08);
   }
 
-  .market-row {
-    @apply flex items-center justify-between px-4 py-3 border-b border-border last:border-0 hover:bg-secondary/60 transition-colors cursor-pointer;
+  .btn-ghost {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors;
   }
 
-  .btn-minimal {
-    @apply px-4 py-1.5 rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors;
+  .btn-secondary {
+    @apply px-4 py-2 rounded-xl text-sm font-medium bg-secondary text-muted-foreground hover:text-foreground border border-border transition-colors;
   }
 
   .btn-primary {
-    @apply px-4 py-1.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity;
+    @apply px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity;
   }
 
-  .tag {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary text-muted-foreground;
+  .btn-danger {
+    @apply px-4 py-2 rounded-xl text-sm font-medium bg-destructive text-white hover:opacity-90 transition-opacity;
   }
 
-  .tag-green { @apply tag bg-success/15 text-success; }
-  .tag-red { @apply tag bg-destructive/15 text-destructive; }
-  .tag-purple { @apply tag bg-primary/15 text-primary; }
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-xl text-sm bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all;
+  }
+
+  .badge-primary {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/15 text-primary;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/15 text-success;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/15 text-warning;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-destructive/15 text-destructive;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400;
+  }
+
+  .hero-glow {
+    background: radial-gradient(ellipse at 50% 30%, rgba(124, 58, 237, 0.12) 0%, transparent 60%);
+  }
+
+  .tabs-scroll {
+    @apply flex gap-1 overflow-x-auto pb-1;
+    scrollbar-width: none;
+  }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
 }

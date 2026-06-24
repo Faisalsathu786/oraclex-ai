@@ -1,236 +1,349 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowLeft, Shield, Brain, BarChart3, Clock, Users, TrendingUp } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { useWallet } from '@/components/web3/Web3Provider'
+import { CHAIN } from '@/lib/config'
+import { formatEther, parseEther } from 'ethers'
+import {
+  fetchAllMarkets,
+  fetchMarketOutcomes,
+  MarketData,
+  OutcomeData,
+  MARKET_STATE_LABELS,
+  MARKET_STATE_COLORS,
+  getFactoryContract,
+  getMarketContract,
+  placeBet,
+  OWNER_WALLET,
+} from '@/lib/contracts'
+import {
+  ArrowLeft,
+  Clock,
+  Users,
+  TrendingUp,
+  Loader2,
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  Wallet,
+  Coins,
+} from 'lucide-react'
 
 export default function MarketDetailPage() {
+  const params = useParams()
+  const marketIndex = Number(params.id)
+  const { provider, signer, address, isConnected, connect } = useWallet()
+
+  const [data, setData] = useState<MarketData | null>(null)
+  const [marketAddress, setMarketAddress] = useState('')
+  const [outcomes, setOutcomes] = useState<OutcomeData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [selectedOutcome, setSelectedOutcome] = useState<number | null>(null)
   const [betAmount, setBetAmount] = useState('')
-  const [selectedOutcome, setSelectedOutcome] = useState<'YES' | 'NO' | null>(null)
-  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy')
+  const [placing, setPlacing] = useState(false)
+  const [txHash, setTxHash] = useState('')
+  const [txStatus, setTxStatus] = useState('')
+
+  const loadMarket = useCallback(async () => {
+    if (!provider || isNaN(marketIndex)) return
+    setLoading(true)
+    setError('')
+    try {
+      const factory = getFactoryContract(provider)
+      const addr: string = await factory.getMarket(marketIndex)
+      if (!addr || addr === '0x0000000000000000000000000000000000000000') {
+        setError('Market not found')
+        setLoading(false)
+        return
+      }
+      setMarketAddress(addr)
+
+      const mc = getMarketContract(addr, provider)
+      const raw = await mc.market()
+      const d: MarketData = {
+        address: addr,
+        id: raw.id,
+        title: raw.title || '',
+        description: raw.description || '',
+        category: raw.category || '',
+        imageUrl: raw.imageUrl || '',
+        creator: raw.creator || '',
+        state: Number(raw.state) as 0 | 1 | 2 | 3,
+        endDate: raw.endDate,
+        createdAt: raw.createdAt,
+        totalVolume: raw.totalVolume,
+        participantCount: raw.participantCount,
+        winningOutcome: raw.winningOutcome,
+        resolved: raw.resolved,
+      }
+      setData(d)
+
+      const outcomes = await fetchMarketOutcomes(addr, provider)
+      setOutcomes(outcomes)
+    } catch (e: any) {
+      setError(e.message || 'Failed to load market')
+    }
+    setLoading(false)
+  }, [provider, marketIndex])
+
+  useEffect(() => { loadMarket() }, [loadMarket])
+
+  const handlePlaceBet = async () => {
+    if (!signer || !marketAddress || selectedOutcome === null || !betAmount) return
+    setPlacing(true)
+    setTxStatus('Submitting bet...')
+    setTxHash('')
+    try {
+      const hash = await placeBet(marketAddress, selectedOutcome, betAmount, signer)
+      setTxHash(hash)
+      setTxStatus('Bet placed successfully!')
+      loadMarket()
+    } catch (e: any) {
+      setTxStatus(e.message?.slice(0, 100) || 'Transaction failed')
+    }
+    setPlacing(false)
+  }
+
+  const isOpen = data?.state === 1
+  const isResolved = data?.state === 3
+  const endDateStr = data?.endDate
+    ? new Date(Number(data.endDate) * 1000).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : ''
+  const totalPool = outcomes.reduce((s, o) => s + o.pool, 0n)
+  const getYesPrice = () => {
+    if (totalPool === 0n) return 0.5
+    const shares = 2n // default 2 outcomes for simple YES/NO
+    return outcomes.length >= 2 ? Number(outcomes[0].pool * 100n / (outcomes[0].pool + outcomes[1].pool)) / 100 : 0.5
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <Wallet size={40} className="mx-auto mb-4 text-zinc-600" />
+          <p className="text-zinc-400 mb-4">Connect your wallet to view this market</p>
+          <button onClick={connect} className="px-5 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+            Connect Wallet
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <Link href="/markets" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
-        <ArrowLeft size={18} /> Back to Markets
-      </Link>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
-            <div className="h-48 bg-gradient-to-r from-purple-900/50 to-blue-900/50 flex items-center justify-center">
-              <div className="text-8xl font-bold text-white/10">BTC</div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="badge-primary">Crypto</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock size={12} /> Closes Dec 31, 2026</span>
-              </div>
-              <h1 className="text-2xl font-bold mb-4">Will BTC reach $200,000 before Dec 2026?</h1>
-              <p className="text-muted-foreground mb-4">
-                Prediction market for Bitcoin price reaching the $200,000 milestone by the end of 2026.
-                Resolution will be based on CoinMarketCap price data at market close.
-              </p>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Users size={14} /> 1.2K participants</span>
-                <span className="flex items-center gap-1"><TrendingUp size={14} /> $1.2M volume</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* AI Analysis Panel */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 gradient-border">
-            <div className="flex items-center gap-2 mb-4">
-              <Brain size={20} className="text-primary" />
-              <h2 className="text-lg font-semibold">AI Analysis</h2>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-muted-foreground">Probability Estimate</span>
-                  <span className="text-sm text-muted-foreground">Confidence: 78%</span>
-                </div>
-                <div className="text-4xl font-bold text-primary mb-6">67%</div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-success mb-1">Bull Case</h4>
-                    <p className="text-sm text-muted-foreground">Strong institutional demand through ETFs. Bitcoin halving supply shock. Growing adoption in emerging markets.</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-destructive mb-1">Bear Case</h4>
-                    <p className="text-sm text-muted-foreground">Regulatory uncertainty. Macroeconomic headwinds from interest rates. Competition from other crypto assets.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="glass-card p-4 mb-4">
-                  <h4 className="text-sm font-medium mb-3">Risk Assessment</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1"><span>Volatility Risk</span><span className="text-warning">Medium</span></div>
-                      <div className="h-2 bg-secondary rounded-full"><div className="h-full w-2/3 bg-warning rounded-full" /></div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1"><span>Market Sentiment</span><span className="text-success">Bullish</span></div>
-                      <div className="h-2 bg-secondary rounded-full"><div className="h-full w-3/4 bg-success rounded-full" /></div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1"><span>Regulatory Risk</span><span className="text-destructive">Elevated</span></div>
-                      <div className="h-2 bg-secondary rounded-full"><div className="h-full w-1/3 bg-destructive rounded-full" /></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Debate Mode */}
-                <div className="glass-card p-4">
-                  <h4 className="text-sm font-medium mb-3">AI Debate Mode</h4>
-                  <div className="space-y-3 text-sm">
-                    <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                      <span className="font-semibold text-success">Bull Agent: </span>
-                      <span className="text-muted-foreground">Strong on-chain metrics and ETF inflows indicate continued upward momentum.</span>
-                    </div>
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                      <span className="font-semibold text-destructive">Bear Agent: </span>
-                      <span className="text-muted-foreground">Historical patterns suggest potential correction before new highs are reached.</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 text-xs text-muted-foreground flex items-center gap-2">
-                  <Shield size={12} /> AI analysis powered by 0G Compute
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Comments */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6">
-            <h3 className="font-semibold mb-4">Discussion</h3>
-            <div className="flex gap-3 mb-4">
-              <input type="text" placeholder="Share your thoughts on this market..." className="input-field flex-1" />
-              <button className="btn-primary whitespace-nowrap">Post</button>
-            </div>
-            <div className="space-y-4">
-              {[
-                { user: 'CryptoWhale', comment: 'BTC has strong momentum. I am confident on this one.', time: '1 hour ago' },
-                { user: 'AI Prophet', comment: 'Bearish signals from macro conditions. Be careful with large positions.', time: '3 hours ago' },
-                { user: 'Market Sage', comment: 'The expanded format increases chances. Good market to watch.', time: '5 hours ago' },
-              ].map((c) => (
-                <div key={c.user + c.time} className="p-3 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                      {c.user[0]}
-                    </div>
-                    <span className="text-sm font-medium">{c.user}</span>
-                    <span className="text-xs text-muted-foreground">{c.time}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground ml-8">{c.comment}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+    <div className="min-h-screen bg-black text-white">
+      <div className="border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+            <ArrowLeft size={16} /> Back
+          </Link>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
+            <span className="text-sm font-bold">OracleX</span>
+          </Link>
         </div>
+      </div>
 
-        {/* Trading Panel */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-1">
-          <div className="glass-card p-6 sticky top-24">
-            <h2 className="text-lg font-semibold mb-4">Trade</h2>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {loading && (
+          <div className="flex items-center justify-center py-20 text-zinc-500">
+            <Loader2 size={20} className="animate-spin mr-2" /> Loading market...
+          </div>
+        )}
 
-            {/* Buy/Sell Tabs */}
-            <div className="grid grid-cols-2 gap-0 mb-4 bg-secondary rounded-xl p-1">
-              <button
-                onClick={() => setActiveTab('buy')}
-                className={`py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'buy' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                Buy
-              </button>
-              <button
-                onClick={() => setActiveTab('sell')}
-                className={`py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'sell' ? 'bg-destructive text-white' : 'text-muted-foreground'
-                }`}
-              >
-                Sell
-              </button>
-            </div>
+        {error && (
+          <div className="text-center py-20">
+            <AlertTriangle size={32} className="mx-auto mb-4 text-red-400" />
+            <p className="text-zinc-400 mb-4">{error}</p>
+            <Link href="/" className="text-sm text-purple-400 hover:text-purple-300">← Back to markets</Link>
+          </div>
+        )}
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <button
-                onClick={() => setSelectedOutcome('YES')}
-                className={`p-4 rounded-xl text-center font-semibold transition-all ${
-                  selectedOutcome === 'YES'
-                    ? 'bg-success/20 border-2 border-success text-success'
-                    : 'bg-secondary border-2 border-transparent hover:border-success/50'
-                }`}
-              >
-                <div className="text-2xl">67%</div>
-                <div className="text-sm mt-1">YES</div>
-                <div className="text-xs text-muted-foreground mt-0.5">$0.67/share</div>
-              </button>
-              <button
-                onClick={() => setSelectedOutcome('NO')}
-                className={`p-4 rounded-xl text-center font-semibold transition-all ${
-                  selectedOutcome === 'NO'
-                    ? 'bg-destructive/20 border-2 border-destructive text-destructive'
-                    : 'bg-secondary border-2 border-transparent hover:border-destructive/50'
-                }`}
-              >
-                <div className="text-2xl">33%</div>
-                <div className="text-sm mt-1">NO</div>
-                <div className="text-xs text-muted-foreground mt-0.5">$0.33/share</div>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-2 block">Amount</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={betAmount}
-                  onChange={e => setBetAmount(e.target.value)}
-                  className="input-field pr-12"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">USDC</span>
+        {!loading && !error && data && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Market Info */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/15 text-purple-300">
+                    {data.category}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${MARKET_STATE_COLORS[data.state as 0|1|2|3] || 'text-zinc-400 bg-zinc-500/10'}`}>
+                    {MARKET_STATE_LABELS[data.state as 0|1|2|3] || 'Unknown'}
+                  </span>
+                </div>
+                <h1 className="text-xl font-bold mb-3">{data.title}</h1>
+                {data.description && (
+                  <p className="text-sm text-zinc-400 mb-4 leading-relaxed">{data.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+                  <span className="flex items-center gap-1"><Clock size={13} /> Ends {endDateStr}</span>
+                  <span className="flex items-center gap-1"><Users size={13} /> {Number(data.participantCount)} participants</span>
+                  <span className="flex items-center gap-1"><TrendingUp size={13} /> {formatEther(data.totalVolume)} 0G volume</span>
+                  <span className="flex items-center gap-1">
+                    <ExternalLink size={13} />
+                    <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
+                      Contract
+                    </a>
+                  </span>
+                </div>
               </div>
+
+              {/* Outcomes */}
+              <div className="glass-card p-6">
+                <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Outcomes</h2>
+                {outcomes.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-600 text-sm">No outcomes loaded</div>
+                ) : (
+                  <div className="grid gap-3">
+                    {outcomes.map((o, i) => {
+                      const poolPct = totalPool > 0n ? Number((o.pool * 10000n) / totalPool) / 100 : 0
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => isOpen && !placing && setSelectedOutcome(i)}
+                          className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all cursor-pointer ${
+                            selectedOutcome === i
+                              ? 'border-purple-500 bg-purple-500/10'
+                              : 'border-zinc-800 hover:border-zinc-600 bg-zinc-900/50'
+                          } ${!isOpen || placing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${selectedOutcome === i ? 'bg-purple-400' : 'bg-zinc-600'}`} />
+                            <span className="text-sm font-medium">{o.name || `Outcome ${i + 1}`}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold">{formatEther(o.pool)} 0G</div>
+                            {totalPool > 0n && <div className="text-xs text-zinc-500">{poolPct.toFixed(1)}%</div>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {isResolved && (
+                <div className="glass-card p-6 border-emerald-500/30">
+                  <div className="flex items-center gap-3 text-emerald-400">
+                    <Check size={20} />
+                    <span className="text-sm font-medium">
+                      Market resolved — Winning outcome: #{Number(data.winningOutcome) + 1}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button className={`w-full py-3 rounded-xl font-semibold mb-4 transition-all ${
-              activeTab === 'buy'
-                ? 'bg-success text-white hover:opacity-90'
-                : 'bg-destructive text-white hover:opacity-90'
-            }`} disabled={!selectedOutcome || !betAmount}>
-              {activeTab === 'buy'
-                ? (selectedOutcome ? `Buy ${selectedOutcome} Shares` : 'Select Outcome')
-                : (selectedOutcome ? `Sell ${selectedOutcome} Shares` : 'Select Outcome')
-              }
-            </button>
+            {/* Betting Panel */}
+            <div className="lg:col-span-1">
+              <div className="glass-card p-6 sticky top-6">
+                <h2 className="text-sm font-semibold mb-4">Place Bet</h2>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-muted-foreground"><span>Your Balance</span><span className="text-white font-medium">10,000 USDC</span></div>
-              <div className="flex justify-between text-muted-foreground"><span>Est. Shares</span><span className="text-white font-medium">{betAmount ? Number(betAmount) / (selectedOutcome === 'YES' ? 0.67 : 0.33) : '--'}</span></div>
-              {activeTab === 'sell' && (
-                <div className="flex justify-between text-warning"><span>Sell Tax (2.5%)</span><span className="text-white font-medium">{betAmount ? (Number(betAmount) * 0.025).toFixed(2) : '--'} USDC</span></div>
-              )}
-              {activeTab === 'buy' && (
-                <div className="flex justify-between text-success"><span>Buy Fee</span><span className="text-white font-medium">FREE</span></div>
-              )}
-            </div>
+                {!isOpen && !isResolved && (
+                  <div className="text-center py-8 text-zinc-500">
+                    <Clock size={24} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Betting is not open for this market</p>
+                  </div>
+                )}
 
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Users size={12} /> YES Pool: $800K</span>
-                <span className="flex items-center gap-1"><Users size={12} /> NO Pool: $400K</span>
+                {isResolved && (
+                  <div className="text-center py-8 text-zinc-500">
+                    <Check size={24} className="mx-auto mb-2 text-emerald-400" />
+                    <p className="text-sm">Market has been resolved</p>
+                  </div>
+                )}
+
+                {isOpen && (
+                  <>
+                    <p className="text-xs text-zinc-500 mb-3">
+                      Select an outcome above, then enter the amount of 0G to bet
+                    </p>
+
+                    <div className="mb-4">
+                      <label className="text-xs text-zinc-500 mb-1 block">Amount (0G)</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          placeholder="0.0"
+                          value={betAmount}
+                          onChange={(e) => setBetAmount(e.target.value)}
+                          className="input-field pr-12 text-sm"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">0G</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handlePlaceBet}
+                      disabled={selectedOutcome === null || !betAmount || !signer || placing}
+                      className="w-full py-3 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+                    >
+                      {placing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 size={14} className="animate-spin" /> Placing Bet...
+                        </span>
+                      ) : (
+                        `Bet on ${selectedOutcome !== null && outcomes[selectedOutcome] ? outcomes[selectedOutcome].name : '...'}`
+                      )}
+                    </button>
+
+                    {txStatus && (
+                      <div className={`px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+                        txStatus.includes('success') || txStatus.includes('Bet placed')
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : txStatus.includes('Error') || txStatus.includes('failed')
+                          ? 'bg-red-500/10 text-red-400'
+                          : 'bg-zinc-800 text-zinc-300'
+                      }`}>
+                        {txStatus.includes('Error') ? <AlertTriangle size={12} /> : txStatus.includes('success') || txStatus.includes('Bet placed') ? <Check size={12} /> : <Loader2 size={12} className="animate-spin" />}
+                        <span className="flex-1">{txStatus}</span>
+                      </div>
+                    )}
+
+                    {txHash && (
+                      <a
+                        href={`${CHAIN.explorerUrl}/tx/${txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300"
+                      >
+                        <ExternalLink size={12} /> View transaction
+                      </a>
+                    )}
+
+                    <div className="mt-4 pt-4 border-t border-zinc-800 space-y-2 text-xs text-zinc-500">
+                      <div className="flex justify-between">
+                        <span>Outcome selected</span>
+                        <span className="text-white font-medium">
+                          {selectedOutcome !== null ? (outcomes[selectedOutcome]?.name || `#${selectedOutcome + 1}`) : '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Pool share</span>
+                        <span className="text-white font-medium">
+                          {selectedOutcome !== null && totalPool > 0n
+                            ? `${(Number(outcomes[selectedOutcome]?.pool || 0n) * 100 / Number(totalPool)).toFixed(1)}%`
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
-        </motion.div>
+        )}
       </div>
     </div>
   )
