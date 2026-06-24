@@ -21,7 +21,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background: #000000;
+    color: #eeeeee;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }

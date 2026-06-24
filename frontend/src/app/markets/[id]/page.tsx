@@ -15,6 +15,7 @@ import {
   MARKET_STATE_COLORS,
   getFactoryContract,
   getMarketContract,
+  getRpcProvider,
   placeBet,
   OWNER_WALLET,
 } from '@/lib/contracts'
@@ -49,11 +50,12 @@ export default function MarketDetailPage() {
   const [txStatus, setTxStatus] = useState('')
 
   const loadMarket = useCallback(async () => {
-    if (!provider || isNaN(marketIndex)) return
+    if (isNaN(marketIndex)) return
     setLoading(true)
     setError('')
     try {
-      const factory = getFactoryContract(provider)
+      const rpc = getRpcProvider()
+      const factory = getFactoryContract(rpc)
       const addr: string = await factory.getMarket(marketIndex)
       if (!addr || addr === '0x0000000000000000000000000000000000000000') {
         setError('Market not found')
@@ -62,7 +64,7 @@ export default function MarketDetailPage() {
       }
       setMarketAddress(addr)
 
-      const mc = getMarketContract(addr, provider)
+      const mc = getMarketContract(addr, rpc)
       const raw = await mc.market()
       const d: MarketData = {
         address: addr,
@@ -82,13 +84,13 @@ export default function MarketDetailPage() {
       }
       setData(d)
 
-      const outcomes = await fetchMarketOutcomes(addr, provider)
+      const outcomes = await fetchMarketOutcomes(addr)
       setOutcomes(outcomes)
     } catch (e: any) {
       setError(e.message || 'Failed to load market')
     }
     setLoading(false)
-  }, [provider, marketIndex])
+  }, [marketIndex])
 
   useEffect(() => { loadMarket() }, [loadMarket])
 
