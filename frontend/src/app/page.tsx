@@ -23,6 +23,7 @@ import {
   getTreasuryContract,
   getFactoryContract,
   getMarketContract,
+  getRpcProvider,
 } from '@/lib/contracts'
 import {
   BarChart3,
@@ -187,34 +188,26 @@ function MarketsTab() {
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="glass-card overflow-hidden">
-          <div className="hidden sm:grid grid-cols-12 gap-3 px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
-            <span className="col-span-5">Market</span>
-            <span className="col-span-2">Category</span>
-            <span className="col-span-2">Status</span>
-            <span className="col-span-1 text-right">Volume</span>
-            <span className="col-span-2 text-right">Participants</span>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((m, i) => (
             <Link key={m.address} href={`/markets/${i}`}>
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 px-5 py-4 border-b border-border last:border-0 hover:bg-zinc-800/30 transition-colors cursor-pointer">
-                <div className="sm:col-span-5">
-                  <span className="text-sm font-medium line-clamp-1">{m.data.title}</span>
-                  <div className="flex sm:hidden items-center gap-2 mt-1">
-                    <span className="text-xs text-zinc-500">{m.data.category}</span>
+              <div className="glass-card p-5 rounded-2xl hover:border-zinc-600 hover:bg-zinc-900/30 transition-all cursor-pointer h-full flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
                     <StateBadge state={m.data.state} />
+                    <span className="text-xs text-zinc-500">{m.data.category}</span>
                   </div>
+                  <p className="text-sm font-medium text-white line-clamp-2 mb-4 leading-snug group-hover:text-purple-300 transition-colors">{m.data.title}</p>
                 </div>
-                <span className="hidden sm:block sm:col-span-2 text-sm text-zinc-400">{m.data.category}</span>
-                <div className="hidden sm:block sm:col-span-2">
-                  <StateBadge state={m.data.state} />
+                <div className="flex items-center justify-between text-xs text-zinc-600 pt-3 border-t border-zinc-800">
+                  <span className="flex items-center gap-1.5">
+                    <Users size={12} />
+                    {Number(m.data.participantCount)} bettors
+                  </span>
+                  <span className="font-mono tabular-nums text-zinc-400">
+                    {Number(m.data.totalVolume) > 0 ? `${Number(formatEther(m.data.totalVolume)).toFixed(1)} 0G` : '—'}
+                  </span>
                 </div>
-                <span className="hidden sm:block sm:col-span-1 text-sm text-right text-zinc-400">
-                  {Number(m.data.totalVolume) > 0 ? `${formatEther(m.data.totalVolume)} 0G` : '—'}
-                </span>
-                <span className="hidden sm:block sm:col-span-2 text-sm text-right text-zinc-400">
-                  {Number(m.data.participantCount)}
-                </span>
               </div>
             </Link>
           ))}
@@ -243,49 +236,69 @@ function LeaderboardTab() {
 
 function PortfolioTab() {
   const { provider, address } = useWallet()
-  const [markets, setMarkets] = useState<{ address: string; data: MarketData }[]>([])
-  const [bets, setBets] = useState<{ market: MarketData; outcomeIndex: number; amount: bigint; pool: bigint }[]>([])
+  const [balance, setBalance] = useState('0')
+  const [bets, setBets] = useState<{ market: string; address: string; data: MarketData; outcomeIndex: number; outcomeName: string; amount: bigint; pool: bigint; totalPool: bigint }[]>([])
   const [loading, setLoading] = useState(true)
-  const [outcomesCache, setOutcomesCache] = useState<Record<string, OutcomeData[]>>({})
 
   useEffect(() => {
     const load = async () => {
-      if (!provider || !address) return
+      if (!address) return
       setLoading(true)
       try {
+        // Fetch wallet balance via RPC
+        const rpc = getRpcProvider()
+        try {
+          const bal = await rpc.getBalance(address)
+          setBalance(Number(formatEther(bal)).toFixed(4))
+        } catch {}
+
         const all = await fetchAllMarkets()
         const userBets: typeof bets = []
-        const oc: typeof outcomesCache = {}
 
         for (const m of all) {
           const bet = await fetchUserBet(m.address, address)
           if (bet && bet.amount > 0n) {
-            if (!oc[m.address]) {
-              oc[m.address] = await fetchMarketOutcomes(m.address)
-            }
-            const outcomes = oc[m.address]
-            const outcomePool = outcomes[Number(bet.outcomeIndex)]?.pool || 0n
+            const outcomes = await fetchMarketOutcomes(m.address)
+            const oidx = Number(bet.outcomeIndex)
+            const outcomeName = outcomes[oidx]?.name || `Outcome ${oidx + 1}`
+            const outcomePool = outcomes[oidx]?.pool || 0n
+            const totalPool = outcomes.reduce((s, o) => s + o.pool, 0n)
             userBets.push({
-              market: m.data,
-              outcomeIndex: Number(bet.outcomeIndex),
+              market: m.data.title,
+              address: m.address,
+              data: m.data,
+              outcomeIndex: oidx,
+              outcomeName,
               amount: bet.amount,
               pool: outcomePool,
+              totalPool,
             })
           }
         }
-
-        setOutcomesCache(oc)
         setBets(userBets)
-        setMarkets(all)
       } catch (e) {
         console.error('Portfolio load error', e)
       }
       setLoading(false)
     }
     load()
-  }, [provider, address])
+  }, [address])
 
   const totalInvested = bets.reduce((s, b) => s + Number(formatEther(b.amount)), 0)
+  const openBets = bets.filter(b => b.data.state === 1)
+  const resolvedBets = bets.filter(b => b.data.state === 3)
+  const pendingBets = bets.filter(b => b.data.state === 0 || b.data.state === 2)
+
+  const getOdds = (pool: bigint, totalPool: bigint): string => {
+    if (totalPool === 0n) return '0'
+    return (Number(pool) * 100 / Number(totalPool)).toFixed(1)
+  }
+
+  const getPotentialWin = (amount: bigint, pool: bigint, totalPool: bigint): string => {
+    if (totalPool === 0n || pool === 0n) return '0'
+    const win = (Number(formatEther(amount)) * Number(totalPool)) / Number(pool)
+    return win.toFixed(4)
+  }
 
   if (loading) {
     return (
@@ -299,48 +312,131 @@ function PortfolioTab() {
     <div>
       <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-6">Portfolio</h2>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="glass-card p-5">
-          <div className="text-lg font-semibold tabular-nums">{totalInvested.toFixed(4)} 0G</div>
-          <div className="text-xs text-zinc-500 mt-1">Total Invested</div>
-        </div>
-        <div className="glass-card p-5">
-          <div className="text-lg font-semibold tabular-nums">{bets.length}</div>
-          <div className="text-xs text-zinc-500 mt-1">Active Positions</div>
-        </div>
-        <div className="glass-card p-5">
-          <div className="text-lg font-semibold tabular-nums">
-            {bets.length > 0 ? Math.round(markets.length > 0 ? (bets.length / markets.length) * 100 : 0) : 0}%
+      {/* Balance + Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-xs text-zinc-500 uppercase tracking-wider">Wallet Balance</span>
           </div>
-          <div className="text-xs text-zinc-500 mt-1">Market Participation</div>
+          <div className="text-2xl font-bold tabular-nums text-white">{balance}</div>
+          <div className="text-xs text-zinc-600 mt-1">0G Tokens</div>
+        </div>
+        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-purple-400" />
+            <span className="text-xs text-zinc-500 uppercase tracking-wider">Total Invested</span>
+          </div>
+          <div className="text-2xl font-bold tabular-nums text-white">{totalInvested.toFixed(4)}</div>
+          <div className="text-xs text-zinc-600 mt-1">0G Tokens</div>
+        </div>
+        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="text-xs text-zinc-500 uppercase tracking-wider">Open Positions</span>
+          </div>
+          <div className="text-2xl font-bold tabular-nums text-white">{openBets.length}</div>
+          <div className="text-xs text-zinc-600 mt-1">Active bets</div>
+        </div>
+        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-xs text-zinc-500 uppercase tracking-wider">Resolved</span>
+          </div>
+          <div className="text-2xl font-bold tabular-nums text-white">{resolvedBets.length}</div>
+          <div className="text-xs text-zinc-600 mt-1">Claimable</div>
         </div>
       </div>
 
       {bets.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
-          <Wallet size={40} className="mb-3 opacity-30" />
-          <p className="text-sm text-zinc-500">No active bets</p>
-          <p className="text-xs text-zinc-600 mt-1">Place your first prediction to see it here</p>
-          <Link href="/markets" className="btn-primary mt-4 text-xs">Browse Markets</Link>
+        <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+          <Wallet size={48} className="mb-4 opacity-20" />
+          <p className="text-sm text-zinc-500 font-medium">No positions yet</p>
+          <p className="text-xs text-zinc-600 mt-1">Start betting on prediction markets to build your portfolio</p>
         </div>
       ) : (
-        <div className="glass-card overflow-hidden">
-          <div className="grid grid-cols-5 gap-3 px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
-            <span className="col-span-2">Market</span>
-            <span>Outcome</span>
-            <span className="text-right">Amount</span>
-            <span className="text-right">Status</span>
-          </div>
-          {bets.map((b) => (
-            <div key={b.market.address + b.outcomeIndex} className="grid grid-cols-5 gap-3 px-5 py-3.5 items-center border-b border-border last:border-0 hover:bg-zinc-800/30 text-sm">
-              <span className="col-span-2 text-xs line-clamp-1">{b.market.title}</span>
-              <span className="text-xs text-zinc-400">Outcome #{b.outcomeIndex + 1}</span>
-              <span className="text-right text-xs font-mono">{formatEther(b.amount)} 0G</span>
-              <div className="text-right">
-                <StateBadge state={b.market.state} />
+        <div className="space-y-8">
+          {/* Open Positions */}
+          {openBets.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Open Positions</h3>
+              <div className="space-y-3">
+                {openBets.map((b) => {
+                  const odds = getOdds(b.pool, b.totalPool)
+                  const winAmount = getPotentialWin(b.amount, b.pool, b.totalPool)
+                  return (
+                    <div key={b.address} className="glass-card p-5 rounded-2xl hover:border-zinc-700 transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{b.market}</p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-300 text-xs font-medium">
+                              <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                              {b.outcomeName}
+                            </span>
+                            <span className="text-xs text-zinc-600">{odds}% pool share</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm font-bold tabular-nums text-white">{formatEther(b.amount)} <span className="text-xs font-normal text-zinc-500">0G</span></div>
+                          <div className="text-xs text-zinc-600 mt-1">
+                            <span className="text-zinc-500">Potential win</span>
+                            <span className="text-emerald-400 font-medium ml-1 tabular-nums">{winAmount} 0G</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Pending/Locked */}
+          {pendingBets.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Pending & Locked</h3>
+              <div className="space-y-2">
+                {pendingBets.map((b) => (
+                  <div key={b.address} className="glass-card p-4 rounded-2xl flex items-center justify-between opacity-70">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <StateBadge state={b.data.state} />
+                      <span className="text-sm text-zinc-300 truncate">{b.market}</span>
+                      <span className="text-xs text-zinc-600">{b.outcomeName}</span>
+                    </div>
+                    <span className="text-sm font-mono text-zinc-400 tabular-nums flex-shrink-0">{formatEther(b.amount)} 0G</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resolved */}
+          {resolvedBets.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Resolved</h3>
+              <div className="space-y-2">
+                {resolvedBets.map((b) => {
+                  const won = Number(b.data.winningOutcome) === b.outcomeIndex
+                  return (
+                    <div key={b.address} className={`glass-card p-4 rounded-2xl flex items-center justify-between border ${won ? 'border-emerald-500/30' : 'border-red-500/20'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                          {won ? 'Won' : 'Lost'}
+                        </span>
+                        <span className="text-sm text-zinc-300 truncate">{b.market}</span>
+                        <span className="text-xs text-zinc-500">{b.outcomeName}</span>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-sm font-mono text-zinc-400 tabular-nums">{formatEther(b.amount)} 0G</span>
+                        {won && <div className="text-xs text-emerald-400 font-medium">{getPotentialWin(b.amount, b.pool, b.totalPool)} 0G payout</div>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
