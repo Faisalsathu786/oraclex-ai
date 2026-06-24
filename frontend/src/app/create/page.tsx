@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useWallet } from '@/components/web3/Web3Provider'
 import { CHAIN } from '@/lib/config'
-import { getFactoryContract, isOwner, OWNER_WALLET } from '@/lib/contracts'
+import { getFactoryContract, getMarketContract, getRpcProvider, isOwner, OWNER_WALLET } from '@/lib/contracts'
 import { parseUnits } from 'ethers'
 import {
   ArrowLeft,
@@ -106,7 +106,27 @@ export default function CreateMarketPage() {
       setStatus('Waiting for confirmation...')
       await tx.wait()
       setTxHash(tx.hash)
-      setStatus('Market created successfully!')
+      setStatus('Market created! Approving...')
+
+      // Auto-approve the market so users can bet immediately
+      try {
+        const rpc = getRpcProvider()
+        const factory = getFactoryContract(rpc)
+        const count = await factory.marketCount()
+        const marketIdx = Number(count) - 1
+        const newAddr = await factory.allMarkets(marketIdx)
+        if (newAddr && newAddr !== '0x0000000000000000000000000000000000000000') {
+          const mc = getMarketContract(newAddr, signer)
+          const approveTx = await mc.approveMarket()
+          setStatus('Approving market...')
+          await approveTx.wait()
+          setStatus('Market created and approved! Ready for betting.')
+        } else {
+          setStatus('Market created!')
+        }
+      } catch {
+        setStatus('Market created! (Approval skipped)')
+      }
 
       // Reset form
       setTimeout(() => {

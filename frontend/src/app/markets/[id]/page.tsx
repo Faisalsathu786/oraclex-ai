@@ -174,17 +174,23 @@ export default function MarketDetailPage() {
             {/* Market Info */}
             <div className="lg:col-span-2 space-y-6">
               <div className="glass-card p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/15 text-purple-300">
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="inline-flex items-center px-3 py-0.5 rounded text-xs font-medium bg-purple-500/15 text-purple-300">
                     {data.category}
                   </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${MARKET_STATE_COLORS[data.state as 0|1|2|3] || 'text-zinc-400 bg-zinc-500/10'}`}>
+                  <span className={`inline-flex items-center px-3 py-0.5 rounded text-xs font-medium ${MARKET_STATE_COLORS[data.state as 0|1|2|3] || 'text-zinc-400 bg-zinc-500/10'}`}>
                     {MARKET_STATE_LABELS[data.state as 0|1|2|3] || 'Unknown'}
                   </span>
                 </div>
                 <h1 className="text-xl font-bold mb-3">{data.title}</h1>
                 {data.description && (
                   <p className="text-sm text-zinc-400 mb-4 leading-relaxed">{data.description}</p>
+                )}
+                {/* Show image */}
+                {data.imageUrl && (
+                  <div className="mb-4 rounded-2xl overflow-hidden border border-zinc-800">
+                    <img src={data.imageUrl} alt={data.title} className="w-full h-48 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                  </div>
                 )}
                 <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
                   <span className="flex items-center gap-1"><Clock size={13} /> Ends {endDateStr}</span>
