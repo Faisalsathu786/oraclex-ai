@@ -777,8 +777,13 @@ function AppHeader({ activeTab, setActiveTab }: { activeTab: string; setActiveTa
               <button
                 key={t}
                 onClick={() => setActiveTab(t)}
-                className={`px-6 py-2.5 rounded-xl text-base font-semibold tracking-wide transition-colors ${
-                  activeTab === t ? 'text-white bg-zinc-800' : 'text-zinc-500 hover:text-zinc-300'
+                className={`px-6 py-2.5 rounded-xl text-base font-semibold tracking-wide transition-all duration-200 ${
+                  activeTab === t 
+                    ? t === 'Markets' ? 'text-emerald-300 bg-emerald-500/15 shadow-sm shadow-emerald-500/20' 
+                      : t === 'Leaderboard' ? 'text-amber-300 bg-amber-500/15 shadow-sm shadow-amber-500/20'
+                      : t === 'Portfolio' ? 'text-blue-300 bg-blue-500/15 shadow-sm shadow-blue-500/20'
+                      : 'text-purple-300 bg-purple-500/15 shadow-sm shadow-purple-500/20'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
                 }`}
               >
                 {t}
