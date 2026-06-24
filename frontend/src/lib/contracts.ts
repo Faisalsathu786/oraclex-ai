@@ -1,6 +1,15 @@
-import { Contract, BrowserProvider, JsonRpcSigner, formatEther, parseEther } from 'ethers'
-import { CONTRACTS } from './config'
+import { Contract, BrowserProvider, JsonRpcSigner, JsonRpcProvider, formatEther, parseEther } from 'ethers'
+import { CONTRACTS, CHAIN } from './config'
 import { FACTORY_ABI, MARKET_ABI, ACCESS_MANAGER_ABI, TREASURY_ABI } from './abis/contracts'
+
+// Read-only RPC provider for contract reads (doesn't require user wallet)
+let _rpcProvider: JsonRpcProvider | null = null
+export function getRpcProvider(): JsonRpcProvider {
+  if (!_rpcProvider) {
+    _rpcProvider = new JsonRpcProvider(CHAIN.rpcUrl, undefined, { staticNetwork: true })
+  }
+  return _rpcProvider
+}
 
 export type MarketState = 0 | 1 | 2 | 3
 
@@ -47,31 +56,37 @@ export interface BetData {
   claimedAt: bigint
 }
 
-export function getFactoryContract(signerOrProvider: JsonRpcSigner | BrowserProvider) {
+export function getFactoryContract(signerOrProvider: JsonRpcSigner | BrowserProvider | JsonRpcProvider) {
   return new Contract(CONTRACTS.factory, FACTORY_ABI, signerOrProvider)
 }
 
-export function getMarketContract(address: string, signerOrProvider: JsonRpcSigner | BrowserProvider) {
+export function getMarketContract(address: string, signerOrProvider: JsonRpcSigner | BrowserProvider | JsonRpcProvider) {
   return new Contract(address, MARKET_ABI, signerOrProvider)
 }
 
-export function getAccessManagerContract(signerOrProvider: JsonRpcSigner | BrowserProvider) {
+export function getAccessManagerContract(signerOrProvider: JsonRpcSigner | BrowserProvider | JsonRpcProvider) {
   return new Contract(CONTRACTS.accessManager, ACCESS_MANAGER_ABI, signerOrProvider)
 }
 
-export function getTreasuryContract(signerOrProvider: JsonRpcSigner | BrowserProvider) {
+export function getTreasuryContract(signerOrProvider: JsonRpcSigner | BrowserProvider | JsonRpcProvider) {
   return new Contract(CONTRACTS.treasury, TREASURY_ABI, signerOrProvider)
 }
 
-export async function fetchAllMarkets(provider: BrowserProvider): Promise<{ address: string; data: MarketData }[]> {
-  const factory = getFactoryContract(provider)
-  const count = await factory.marketCount()
+export async function fetchAllMarkets(provider?: BrowserProvider): Promise<{ address: string; data: MarketData }[]> {
+  const rpc = provider || getRpcProvider()
+  const factory = getFactoryContract(rpc)
+  let count: bigint
+  try {
+    count = await factory.marketCount()
+  } catch {
+    return []  // Return empty if contract call fails
+  }
   const markets: { address: string; data: MarketData }[] = []
 
   for (let i = 0; i < Number(count); i++) {
     try {
       const addr: string = await factory.allMarkets(i)
-      const mc = getMarketContract(addr, provider)
+      const mc = getMarketContract(addr, rpc)
       const raw = await mc.market()
 
       const data: MarketData = {
@@ -99,8 +114,9 @@ export async function fetchAllMarkets(provider: BrowserProvider): Promise<{ addr
   return markets
 }
 
-export async function fetchMarketOutcomes(address: string, provider: BrowserProvider): Promise<OutcomeData[]> {
-  const mc = getMarketContract(address, provider)
+export async function fetchMarketOutcomes(address: string, provider?: BrowserProvider): Promise<OutcomeData[]> {
+  const rpc = provider || getRpcProvider()
+  const mc = getMarketContract(address, rpc)
   const raw = await mc.getOutcomes()
   return raw.map((o: any) => ({
     name: o.name || '',
@@ -108,8 +124,9 @@ export async function fetchMarketOutcomes(address: string, provider: BrowserProv
   }))
 }
 
-export async function fetchUserBet(address: string, userAddress: string, provider: BrowserProvider): Promise<BetData | null> {
-  const mc = getMarketContract(address, provider)
+export async function fetchUserBet(address: string, userAddress: string, provider?: BrowserProvider): Promise<BetData | null> {
+  const rpc = provider || getRpcProvider()
+  const mc = getMarketContract(address, rpc)
   const hasBet = await mc.hasBet(userAddress)
   if (!hasBet) return null
   const raw = await mc.bets(userAddress)

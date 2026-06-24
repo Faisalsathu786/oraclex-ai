@@ -112,7 +112,7 @@ function MarketsTab() {
     setLoading(true)
     setError('')
     try {
-      const m = await fetchAllMarkets(provider)
+      const m = await fetchAllMarkets()
       m.sort((a, b) => Number(b.data.createdAt - a.data.createdAt))
       setMarkets(m)
     } catch (e: any) {
@@ -253,15 +253,15 @@ function PortfolioTab() {
       if (!provider || !address) return
       setLoading(true)
       try {
-        const all = await fetchAllMarkets(provider)
+        const all = await fetchAllMarkets()
         const userBets: typeof bets = []
         const oc: typeof outcomesCache = {}
 
         for (const m of all) {
-          const bet = await fetchUserBet(m.address, address, provider)
+          const bet = await fetchUserBet(m.address, address)
           if (bet && bet.amount > 0n) {
             if (!oc[m.address]) {
-              oc[m.address] = await fetchMarketOutcomes(m.address, provider)
+              oc[m.address] = await fetchMarketOutcomes(m.address)
             }
             const outcomes = oc[m.address]
             const outcomePool = outcomes[Number(bet.outcomeIndex)]?.pool || 0n
@@ -370,10 +370,12 @@ function AdminPanel() {
     setLoading(true)
     try {
       const factory = getFactoryContract(provider)
-      const count = await factory.marketCount()
-      setMarketCount(Number(count))
+      try {
+        const count = await factory.marketCount()
+        setMarketCount(Number(count))
+      } catch { /* ignore */ }
 
-      const all = await fetchAllMarkets(provider)
+      const all = await fetchAllMarkets()
       setMarkets(all)
 
       try {
