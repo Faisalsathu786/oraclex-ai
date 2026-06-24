@@ -23,6 +23,7 @@ export const ACCESS_MANAGER_ABI = [
 
 export const MARKET_ABI = [
   'function approveMarket() external',
+  'function rejectMarket() external',
   'function placeBet(uint256 outcomeIndex) payable',
   'function resolveMarket(uint256 winningOutcome) external',
   'function claimReward() external',

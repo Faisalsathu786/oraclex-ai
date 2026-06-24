@@ -517,12 +517,26 @@ function AdminPanel() {
 
   const approveMarket = async (marketAddr: string) => {
     if (!signer) return
-    setTxStatus(`Approving market ${marketAddr.slice(0, 6)}...${marketAddr.slice(-4)} ...`)
+    setTxStatus(`Approving...`)
     try {
       const mc = getMarketContract(marketAddr, signer)
       const tx = await mc.approveMarket()
       await tx.wait()
       setTxStatus('Market approved!')
+      loadData()
+    } catch (e: any) {
+      setTxStatus(`Error: ${e.message?.slice(0, 60)}`)
+    }
+  }
+
+  const cancelMarket = async (marketAddr: string) => {
+    if (!signer) return
+    setTxStatus(`Cancelling...`)
+    try {
+      const mc = getMarketContract(marketAddr, signer)
+      const tx = await mc.rejectMarket()
+      await tx.wait()
+      setTxStatus('Market cancelled!')
       loadData()
     } catch (e: any) {
       setTxStatus(`Error: ${e.message?.slice(0, 60)}`)
@@ -653,6 +667,25 @@ function AdminPanel() {
                   </button>
                 </div>
               ))}
+              {openMarkets.length > 0 && (
+                <div className="glass-card overflow-hidden mt-6">
+                  <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">Open Markets</div>
+                  {openMarkets.map((m) => (
+                    <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
+                      <div className="flex-1 min-w-0 mr-4">
+                        <p className="text-sm font-medium truncate">{m.data.title}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors</p>
+                      </div>
+                      <button
+                        onClick={() => cancelMarket(m.address)}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors whitespace-nowrap"
+                      >
+                        Cancel Market
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
