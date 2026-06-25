@@ -32,7 +32,38 @@ import {
   ExternalLink,
   Wallet,
   Coins,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Shield,
+  Zap,
+  Brain,
+  Sparkles,
+  Target,
+  ThumbsUp,
+  ThumbsDown,
+  Info,
+  MessageCircle,
+  Activity,
+  Trophy,
+  Calendar,
 } from 'lucide-react'
+
+// ─── Helpers ───────────────────────────────────────────────────────
+
+function getTimeRemaining(endTimestamp: bigint): string {
+  const now = Math.floor(Date.now() / 1000)
+  const remaining = Math.max(0, Number(endTimestamp) - now)
+  if (remaining <= 0) return 'Ended'
+  const days = Math.floor(remaining / 86400)
+  const hours = Math.floor((remaining % 86400) / 3600)
+  const mins = Math.floor((remaining % 3600) / 60)
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
+}
+
+// ─── MAIN PAGE ─────────────────────────────────────────────────────
 
 export default function MarketDetailPage() {
   const params = useParams()
@@ -52,6 +83,7 @@ export default function MarketDetailPage() {
   const [txStatus, setTxStatus] = useState('')
   const [userBet, setUserBet] = useState<BetData | null>(null)
   const [claiming, setClaiming] = useState(false)
+  const [accordionOpen, setAccordionOpen] = useState(false)
 
   const loadMarket = useCallback(async () => {
     if (isNaN(marketIndex)) return
@@ -98,7 +130,6 @@ export default function MarketDetailPage() {
 
   useEffect(() => { loadMarket() }, [loadMarket])
 
-  // Fetch user bet info
   useEffect(() => {
     if (!marketAddress || !address) return
     const loadBet = async () => {
@@ -108,18 +139,11 @@ export default function MarketDetailPage() {
         const hb = await mc.hasBet(address)
         if (hb) {
           const raw = await mc.bets(address)
-          setUserBet({
-            user: raw.user,
-            outcomeIndex: raw.outcomeIndex,
-            amount: raw.amount,
-            claimedAt: raw.claimedAt,
-          })
+          setUserBet({ user: raw.user, outcomeIndex: raw.outcomeIndex, amount: raw.amount, claimedAt: raw.claimedAt })
         } else {
           setUserBet(null)
         }
-      } catch {
-        setUserBet(null)
-      }
+      } catch { setUserBet(null) }
     }
     loadBet()
   }, [marketAddress, address])
@@ -133,20 +157,12 @@ export default function MarketDetailPage() {
       const hash = await claimReward(marketAddress, signer)
       setTxHash(hash)
       setTxStatus('Reward claimed successfully!')
-      // Refresh bet data
       const rpc = getRpcProvider()
       const mc = getMarketContract(marketAddress, rpc)
       const raw = await mc.bets(address!)
-      setUserBet({
-        user: raw.user,
-        outcomeIndex: raw.outcomeIndex,
-        amount: raw.amount,
-        claimedAt: raw.claimedAt,
-      })
+      setUserBet({ user: raw.user, outcomeIndex: raw.outcomeIndex, amount: raw.amount, claimedAt: raw.claimedAt })
       loadMarket()
-    } catch (e: any) {
-      setTxStatus(e.message?.slice(0, 100) || 'Claim failed')
-    }
+    } catch (e: any) { setTxStatus(e.message?.slice(0, 100) || 'Claim failed') }
     setClaiming(false)
   }
 
@@ -160,35 +176,54 @@ export default function MarketDetailPage() {
       setTxHash(hash)
       setTxStatus('Bet placed successfully!')
       loadMarket()
-    } catch (e: any) {
-      setTxStatus(e.message?.slice(0, 100) || 'Transaction failed')
-    }
+    } catch (e: any) { setTxStatus(e.message?.slice(0, 100) || 'Transaction failed') }
     setPlacing(false)
   }
 
   const isOpen = data?.state === 1
   const isResolved = data?.state === 3
   const endDateStr = data?.endDate
-    ? new Date(Number(data.endDate) * 1000).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? new Date(Number(data.endDate) * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
+  const timeRemaining = data?.endDate ? getTimeRemaining(data.endDate) : '—'
   const totalPool = outcomes.reduce((s, o) => s + o.pool, 0n)
-  const getYesPrice = () => {
-    if (totalPool === 0n) return 0.5
-    const shares = 2n // default 2 outcomes for simple YES/NO
-    return outcomes.length >= 2 ? Number(outcomes[0].pool * 100n / (outcomes[0].pool + outcomes[1].pool)) / 100 : 0.5
+
+  const getPayoutMultiplier = (outcomePool: bigint) => {
+    if (totalPool === 0n || outcomePool === 0n) return '1.00x'
+    return `${(Number(totalPool) / Number(outcomePool)).toFixed(2)}x`
   }
+
+  // AI analysis derived from on-chain data
+  const getAIAnalysis = () => {
+    if (!data || outcomes.length < 2) return null
+    const sorted = [...outcomes].map((o, i) => ({ ...o, index: i })).sort((a, b) => Number(b.pool - a.pool))
+    const leader = sorted[0]
+    const leaderPct = totalPool > 0n ? Number(leader.pool * 100n / totalPool) : 50
+    const confidence = Math.min(95, Math.round(leaderPct + 10))
+    const riskLevel = leaderPct > 80 ? 'Low' : leaderPct > 60 ? 'Medium' : 'High'
+    return {
+      probability: Math.round(leaderPct),
+      confidence,
+      leader: leader.name,
+      leaderIndex: leader.index,
+      riskLevel,
+      bullCase: `Market sentiment strongly favors "${leader.name}" with ${Math.round(leaderPct)}% of total liquidity. ${data.participantCount > 0n ? `${data.participantCount} participants have weighed in.` : ''} The consensus is clear based on capital allocation.`,
+      bearCase: `${sorted[sorted.length - 1]?.name || 'The alternative'} holds only ${totalPool > 0n ? Math.round(Number((sorted[sorted.length - 1]?.pool || 0n) * 100n / totalPool)) : 0}% of the pool. For contrarians, the payout multiplier of ${getPayoutMultiplier(sorted[sorted.length - 1]?.pool || 0n)} offers significant upside if the unexpected occurs.`,
+    }
+  }
+
+  const ai = getAIAnalysis()
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <Wallet size={40} className="mx-auto mb-4 text-zinc-600" />
-          <p className="text-zinc-400 mb-4">Connect your wallet to view this market</p>
-          <button onClick={connect} className="px-5 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center">
+            <Wallet size={28} className="text-purple-400" />
+          </div>
+          <h2 className="text-lg font-bold mb-2">Connect Wallet</h2>
+          <p className="text-zinc-500 text-sm mb-6">Connect your wallet to view and bet on prediction markets</p>
+          <button onClick={connect} className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-500/20">
             Connect Wallet
           </button>
         </div>
@@ -198,91 +233,187 @@ export default function MarketDetailPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-12 sm:h-14 flex items-center">
-          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm">
-            <ArrowLeft size={16} /> Back to markets
+      {/* Top bar */}
+      <div className="border-b border-zinc-800 bg-black/80 backdrop-blur-xl sticky top-14 sm:top-16 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-12 flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors text-sm">
+            <ArrowLeft size={16} /> Markets
           </Link>
+          {data && <span className="text-zinc-700">/</span>}
+          {data && <span className="text-sm text-zinc-300 truncate">{data.title}</span>}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {loading && (
-          <div className="flex items-center justify-center py-20 text-zinc-500">
-            <Loader2 size={20} className="animate-spin mr-2" /> Loading market...
+          <div className="flex items-center justify-center py-32">
+            <div className="text-center">
+              <Loader2 size={32} className="animate-spin mx-auto mb-4 text-purple-400" />
+              <p className="text-sm text-zinc-500">Loading market data...</p>
+            </div>
           </div>
         )}
 
         {error && (
-          <div className="text-center py-20">
-            <AlertTriangle size={32} className="mx-auto mb-4 text-red-400" />
-            <p className="text-zinc-400 mb-4">{error}</p>
-            <Link href="/" className="text-sm text-purple-400 hover:text-purple-300">← Back to markets</Link>
+          <div className="text-center py-32">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+              <AlertTriangle size={28} className="text-red-400" />
+            </div>
+            <p className="text-zinc-400 text-lg mb-2">Market Not Found</p>
+            <p className="text-zinc-600 text-sm mb-6">{error}</p>
+            <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+              <ArrowLeft size={14} /> Back to Markets
+            </Link>
           </div>
         )}
 
         {!loading && !error && data && (
-          <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Market Info */}
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              <div className="glass-card p-4 sm:p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="inline-flex items-center px-3 py-0.5 rounded text-xs font-medium bg-purple-500/15 text-purple-300">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* ─── LEFT COLUMN ───────────────────────────────────────── */}
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* SECTION 1 — Market Header */}
+              <div className="glass-card p-5 sm:p-6 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                     {data.category}
                   </span>
-                  <span className={`inline-flex items-center px-3 py-0.5 rounded text-xs font-medium ${MARKET_STATE_COLORS[data.state as 0|1|2|3] || 'text-zinc-400 bg-zinc-500/10'}`}>
-                    {MARKET_STATE_LABELS[data.state as 0|1|2|3] || 'Unknown'}
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                    data.state === 1 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                    data.state === 3 ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                    'bg-zinc-500/10 border-zinc-500/20 text-zinc-400'
+                  }`}>
+                    {MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || 'Unknown'}
                   </span>
                 </div>
-                <h1 className="text-xl font-bold mb-3">{data.title}</h1>
+
+                <h1 className="text-xl sm:text-2xl font-bold leading-tight tracking-tight">{data.title}</h1>
+
                 {data.description && (
-                  <p className="text-sm text-zinc-400 mb-4 leading-relaxed">{data.description}</p>
+                  <p className="text-sm text-zinc-400 leading-relaxed">{data.description}</p>
                 )}
-                {/* Show image */}
+
                 {data.imageUrl && (
-                  <div className="mb-4 rounded-2xl overflow-hidden border border-zinc-800">
-                    <img src={data.imageUrl} alt={data.title} className="w-full h-40 sm:h-48 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                  <div className="rounded-xl overflow-hidden border border-zinc-800">
+                    <img src={data.imageUrl} alt={data.title} className="w-full h-44 sm:h-56 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   </div>
                 )}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-zinc-500">
-                  <span className="flex items-center gap-1"><Clock size={13} /> Ends {endDateStr}</span>
-                  <span className="flex items-center gap-1"><Users size={13} /> {Number(data.participantCount)} participants</span>
-                  <span className="flex items-center gap-1"><TrendingUp size={13} /> {formatEther(data.totalVolume)} 0G volume</span>
-                  <span className="flex items-center gap-1">
-                    <ExternalLink size={13} />
-                    <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
-                      Contract
-                    </a>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 pt-2 border-t border-zinc-800/50">
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
+                    <Calendar size={13} /> Ends {endDateStr}
                   </span>
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
+                    Creator {data.creator.slice(0, 6)}...{data.creator.slice(-4)}
+                  </span>
+                  <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 hover:text-purple-400 transition-colors">
+                    <ExternalLink size={13} /> View Contract
+                  </a>
                 </div>
               </div>
 
-              {/* Outcomes */}
-              <div className="glass-card p-4 sm:p-6">
-                <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Outcomes</h2>
+              {/* SECTION 2 — Market Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="glass-card p-3 sm:p-4 text-center">
+                  <TrendingUp size={16} className="mx-auto mb-1.5 text-purple-400" />
+                  <div className="text-lg sm:text-xl font-bold tabular-nums">{Number(formatEther(data.totalVolume)).toFixed(1)}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Total Volume (0G)</div>
+                </div>
+                <div className="glass-card p-3 sm:p-4 text-center">
+                  <Users size={16} className="mx-auto mb-1.5 text-blue-400" />
+                  <div className="text-lg sm:text-xl font-bold">{Number(data.participantCount)}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Participants</div>
+                </div>
+                <div className="glass-card p-3 sm:p-4 text-center">
+                  <Clock size={16} className="mx-auto mb-1.5 text-amber-400" />
+                  <div className="text-lg sm:text-xl font-bold">{timeRemaining}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Time Left</div>
+                </div>
+                <div className="glass-card p-3 sm:p-4 text-center">
+                  <Activity size={16} className="mx-auto mb-1.5 text-emerald-400" />
+                  <div className="text-lg sm:text-xl font-bold">{MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || '—'}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Status</div>
+                </div>
+                <div className="glass-card p-3 sm:p-4 text-center">
+                  <Shield size={16} className="mx-auto mb-1.5 text-purple-400" />
+                  <div className="text-lg sm:text-xl font-bold">On-Chain</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Resolution</div>
+                </div>
+              </div>
+
+              {/* SECTION 3 — Outcomes Panel */}
+              <div className="glass-card p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Outcomes</h2>
+                  <span className="text-xs text-zinc-600">{outcomes.length} options</span>
+                </div>
                 {outcomes.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-600 text-sm">No outcomes loaded</div>
+                  <div className="text-center py-12 text-zinc-600 text-sm">No outcomes loaded</div>
                 ) : (
-                  <div className="grid gap-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {outcomes.map((o, i) => {
-                      const poolPct = totalPool > 0n ? Number((o.pool * 10000n) / totalPool) / 100 : 0
+                      const poolPct = totalPool > 0n ? Math.round(Number(o.pool * 10000n) / Number(totalPool)) / 100 : 0
+                      const isSelected = selectedOutcome === i
+                      const isWinner = isResolved && Number(data.winningOutcome) === i
                       return (
                         <div
                           key={i}
                           onClick={() => isOpen && !placing && setSelectedOutcome(i)}
-                          className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all cursor-pointer ${
-                            selectedOutcome === i
-                              ? 'border-purple-500 bg-purple-500/10'
-                              : 'border-zinc-800 hover:border-zinc-600 bg-zinc-900/50'
-                          } ${!isOpen || placing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          className={`relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer group ${
+                            isSelected
+                              ? 'border-purple-500 bg-gradient-to-br from-purple-500/10 to-blue-500/5 shadow-lg shadow-purple-500/10'
+                              : isWinner
+                              ? 'border-emerald-500/40 bg-emerald-500/5'
+                              : 'border-zinc-800 hover:border-zinc-600 bg-zinc-900/30 hover:bg-zinc-900/50'
+                          } ${!isOpen && !isWinner ? 'opacity-70' : ''}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full ${selectedOutcome === i ? 'bg-purple-400' : 'bg-zinc-600'}`} />
-                            <span className="text-sm font-medium">{o.name || `Outcome ${i + 1}`}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-semibold">{formatEther(o.pool)} 0G</div>
-                            {totalPool > 0n && <div className="text-xs text-zinc-500">{poolPct.toFixed(1)}%</div>}
+                          {/* Progress bar */}
+                          <div
+                            className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 rounded-full ${
+                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500' : isWinner ? 'bg-emerald-500' : 'bg-zinc-700'
+                            }`}
+                            style={{ width: `${Math.max(2, poolPct)}%` }}
+                          />
+
+                          <div className="p-4 sm:p-5">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors ${
+                                  isSelected ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : isWinner ? 'bg-emerald-400' : 'bg-zinc-600'
+                                }`} />
+                                <h3 className="text-sm font-semibold truncate">{o.name || `Outcome ${i + 1}`}</h3>
+                              </div>
+                              {isWinner && <Trophy size={14} className="text-emerald-400 flex-shrink-0" />}
+                              {isSelected && <Sparkles size={14} className="text-purple-400 flex-shrink-0 animate-pulse" />}
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-zinc-500">Probability</span>
+                                <span className={`font-bold tabular-nums ${isSelected ? 'text-purple-300' : 'text-zinc-300'}`}>{poolPct.toFixed(1)}%</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-zinc-500">Pool</span>
+                                <span className="text-zinc-300 tabular-nums">{Number(formatEther(o.pool)).toFixed(2)} 0G</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-zinc-500">Payout</span>
+                                <span className={`font-medium tabular-nums ${isSelected ? 'text-emerald-400' : 'text-zinc-400'}`}>{getPayoutMultiplier(o.pool)}</span>
+                              </div>
+                            </div>
+
+                            {isOpen && (
+                              <button
+                                className={`mt-4 w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md shadow-purple-500/25'
+                                    : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-300 group-hover:bg-zinc-700'
+                                }`}
+                              >
+                                {isSelected ? 'Selected ✓' : 'Select Outcome'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       )
@@ -291,53 +422,209 @@ export default function MarketDetailPage() {
                 )}
               </div>
 
-              {isResolved && (
-                <div className="glass-card p-6 border-emerald-500/30">
-                  <div className="flex items-center gap-3 text-emerald-400">
-                    <Check size={20} />
-                    <span className="text-sm font-medium">
-                      Market resolved — Winning outcome: #{Number(data.winningOutcome) + 1}
-                    </span>
+              {/* SECTION 5 — AI Analysis */}
+              {ai && (
+                <div className="glass-card p-5 sm:p-6 border-purple-500/10">
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                      <Brain size={16} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold text-zinc-300">AI Analysis</h2>
+                      <p className="text-xs text-zinc-600">Powered by 0G Compute</p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Target size={14} className="text-purple-400" />
+                        <span className="text-xs font-medium text-zinc-400">Probability Score</span>
+                      </div>
+                      <div className="flex items-end gap-1">
+                        <span className="text-3xl font-bold">{ai.probability}%</span>
+                        <span className="text-sm text-zinc-600 mb-1">{ai.leader}</span>
+                      </div>
+                      <div className="mt-2 w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-700" style={{ width: `${ai.probability}%` }} />
+                      </div>
+                    </div>
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Shield size={14} className="text-blue-400" />
+                        <span className="text-xs font-medium text-zinc-400">Confidence</span>
+                      </div>
+                      <div className="flex items-end gap-1">
+                        <span className="text-3xl font-bold">{ai.confidence}%</span>
+                      </div>
+                      <div className="mt-2 w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-700" style={{ width: `${ai.confidence}%` }} />
+                      </div>
+                    </div>
+                    <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle size={14} className={ai.riskLevel === 'Low' ? 'text-emerald-400' : ai.riskLevel === 'Medium' ? 'text-amber-400' : 'text-red-400'} />
+                        <span className="text-xs font-medium text-zinc-400">Risk Level</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${ai.riskLevel === 'Low' ? 'text-emerald-400' : ai.riskLevel === 'Medium' ? 'text-amber-400' : 'text-red-400'}`}>{ai.riskLevel}</span>
+                      <p className="text-xs text-zinc-600 mt-1">Based on pool concentration</p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="bg-zinc-900/30 rounded-xl p-4 border border-emerald-500/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ThumbsUp size={14} className="text-emerald-400" />
+                        <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Bull Case</span>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed">{ai.bullCase}</p>
+                    </div>
+                    <div className="bg-zinc-900/30 rounded-xl p-4 border border-red-500/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ThumbsDown size={14} className="text-red-400" />
+                        <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Bear Case</span>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed">{ai.bearCase}</p>
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* SECTION 6 — Resolution Info */}
+              <div className="glass-card overflow-hidden">
+                <button
+                  onClick={() => setAccordionOpen(!accordionOpen)}
+                  className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-zinc-900/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Info size={16} className="text-zinc-500" />
+                    <div className="text-left">
+                      <h3 className="text-sm font-semibold text-zinc-300">Resolution Information</h3>
+                      <p className="text-xs text-zinc-600">Criteria, sources, and rules</p>
+                    </div>
+                  </div>
+                  {accordionOpen ? <ChevronUp size={18} className="text-zinc-500" /> : <ChevronDown size={18} className="text-zinc-500" />}
+                </button>
+                {accordionOpen && (
+                  <div className="px-5 sm:px-6 pb-6 space-y-4 border-t border-zinc-800/50 pt-4 animate-in slide-in-from-top">
+                    <div>
+                      <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Resolution Criteria</h4>
+                      <p className="text-sm text-zinc-400">The market resolves based on the outcome selected by the platform moderator after the event end date. Moderators verify results against official sources and public data.</p>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2">Resolution Source</h4>
+                        <p className="text-sm text-zinc-500">On-chain moderator consensus via 0G Mainnet smart contracts</p>
+                      </div>
+                      <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2">Data Providers</h4>
+                        <p className="text-sm text-zinc-500">OracleX Access Manager · 0G Chain · Public APIs</p>
+                      </div>
+                    </div>
+                    <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle size={13} className="text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-400">Important</span>
+                      </div>
+                      <p className="text-xs text-zinc-500">Once resolved, the winning outcome is immutable on 0G chain. All rewards are distributed automatically through smart contracts.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 7 — Comments & Activity */}
+              <div className="glass-card p-5 sm:p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <MessageCircle size={16} className="text-zinc-500" />
+                  <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Activity Feed</h2>
+                </div>
+                {data.participantCount > 0n ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <Activity size={14} className="text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-zinc-300"><span className="text-purple-400 font-medium">{Number(data.participantCount)} participants</span> have placed bets on this market</p>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">Total volume: {Number(formatEther(data.totalVolume)).toFixed(2)} 0G</p>
+                      </div>
+                    </div>
+                    {isResolved && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                          <Trophy size={14} className="text-emerald-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-zinc-300">Market resolved — Winner: <span className="text-emerald-400 font-medium">{outcomes[Number(data.winningOutcome)]?.name || `#${Number(data.winningOutcome) + 1}`}</span></p>
+                          <p className="text-[10px] text-zinc-600 mt-0.5">Winners can now claim their rewards</p>
+                        </div>
+                      </div>
+                    )}
+                    {!isResolved && isOpen && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                          <Zap size={14} className="text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-zinc-300">Market is active and accepting bets</p>
+                          <p className="text-[10px] text-zinc-600 mt-0.5">Place your prediction before the market closes</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Activity size={32} className="mx-auto mb-3 text-zinc-700" />
+                    <p className="text-sm text-zinc-600">No activity yet</p>
+                    <p className="text-xs text-zinc-700 mt-1">Be the first to place a bet</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Betting Panel */}
+            {/* ─── RIGHT COLUMN — Betting Panel ──────────────────────── */}
             <div className="lg:col-span-1">
-              <div className="glass-card p-6 sticky top-6">
-                {/* User Bet Info */}
+              <div className="glass-card p-5 sm:p-6 sticky top-[calc(3.5rem+3rem)] sm:top-[calc(4rem+3rem)] border-zinc-700/50">
+
+                {/* User Bet Badge */}
                 {userBet && (
-                  <div className="mb-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700">
-                    <p className="text-xs text-zinc-500 mb-1">Your Bet</p>
-                    <div className="flex items-center justify-between">
+                  <div className="mb-5 p-4 rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/15">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Your Position</p>
+                    <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium">{outcomes[Number(userBet.outcomeIndex)]?.name || `#${Number(userBet.outcomeIndex) + 1}`}</span>
                       <span className="text-sm font-bold tabular-nums">{formatEther(userBet.amount)} 0G</span>
                     </div>
                     {userBet.claimedAt > 0n && (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
-                        <Check size={12} /> Claimed
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit">
+                        <Check size={11} /> Claimed
                       </div>
                     )}
                   </div>
                 )}
 
-                {!isOpen && !isResolved && data.state !== 4 && !userBet && (
-                  <div className="text-center py-8 text-zinc-500">
-                    <Clock size={24} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Betting is not open for this market</p>
+                {/* Not Open State */}
+                {!isOpen && !isResolved && data.state !== 4 && (
+                  <div className="text-center py-12">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                      <Clock size={24} className="text-amber-400" />
+                    </div>
+                    <p className="text-sm font-medium text-zinc-400">Betting {data.state === 0 ? 'Not Yet Open' : 'Closed'}</p>
+                    <p className="text-xs text-zinc-600 mt-1">
+                      {data.state === 0 ? 'This market is pending moderator approval' : 'This market has closed for betting'}
+                    </p>
                   </div>
                 )}
 
-                {/* Cancelled state */}
+                {/* Cancelled */}
                 {data.state === 4 && (
-                  <div className="text-center py-8 text-zinc-500">
-                    <AlertTriangle size={24} className="mx-auto mb-2 text-red-400" />
-                    <p className="text-sm text-red-400">Market was cancelled</p>
+                  <div className="text-center py-12">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                      <AlertTriangle size={24} className="text-red-400" />
+                    </div>
+                    <p className="text-sm font-medium text-red-400">Market Cancelled</p>
                     {userBet && (
                       <p className="text-xs text-zinc-600 mt-2">
-                        Your {formatEther(userBet.amount)} 0G bet on &quot;{outcomes[Number(userBet.outcomeIndex)]?.name}&quot; is impacted.
-                        Contact admin for refund.
+                        Your {formatEther(userBet.amount)} 0G bet on &quot;{outcomes[Number(userBet.outcomeIndex)]?.name}&quot; is locked. Contact admin for resolution.
                       </p>
                     )}
                   </div>
@@ -345,88 +632,135 @@ export default function MarketDetailPage() {
 
                 {/* Resolved — Claim */}
                 {isResolved && (
-                  <div>
-                    <div className="text-center mb-4">
-                      <Check size={24} className="mx-auto mb-2 text-emerald-400" />
-                      <p className="text-sm text-zinc-400">Market resolved</p>
-                      <p className="text-xs text-emerald-400 font-medium mt-1">
-                        Winner: {outcomes[Number(data.winningOutcome)]?.name || `#${Number(data.winningOutcome) + 1}`}
-                      </p>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                        <Trophy size={24} className="text-emerald-400" />
+                      </div>
+                      <p className="text-sm font-medium text-zinc-300">Market Resolved</p>
+                      <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="text-xs font-medium text-emerald-400">
+                          {outcomes[Number(data.winningOutcome)]?.name || `Outcome #${Number(data.winningOutcome) + 1}`}
+                        </span>
+                      </div>
                     </div>
+
                     {userBet && Number(userBet.outcomeIndex) === Number(data.winningOutcome) && userBet.claimedAt === 0n && (
                       <button
                         onClick={handleClaim}
                         disabled={claiming || !signer}
-                        className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-40 shadow-lg shadow-emerald-500/20"
                       >
                         {claiming ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <Loader2 size={14} className="animate-spin" /> Claiming...
-                          </span>
-                        ) : (
-                          `Claim Reward`
-                        )}
+                          <span className="flex items-center justify-center gap-2"><Loader2 size={15} className="animate-spin" /> Claiming Reward...</span>
+                        ) : 'Claim Reward'}
                       </button>
                     )}
+
                     {userBet && Number(userBet.outcomeIndex) !== Number(data.winningOutcome) && (
-                      <div className="text-center py-3 text-xs text-zinc-500">
-                        <AlertTriangle size={14} className="mx-auto mb-1 text-red-400" />
-                        You bet on {outcomes[Number(userBet.outcomeIndex)]?.name}. Better luck next time!
+                      <div className="text-center p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                        <ThumbsDown size={18} className="mx-auto mb-2 text-red-400" />
+                        <p className="text-xs text-zinc-400">You predicted {outcomes[Number(userBet.outcomeIndex)]?.name}</p>
+                        <p className="text-xs text-zinc-600 mt-0.5">The outcome was different</p>
                       </div>
                     )}
+
                     {userBet && Number(userBet.outcomeIndex) === Number(data.winningOutcome) && userBet.claimedAt > 0n && (
-                      <div className="text-center py-3 flex items-center justify-center gap-2 text-sm text-emerald-400">
-                        <Check size={16} /> Reward claimed
+                      <div className="text-center p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                        <Check size={18} className="mx-auto mb-1 text-emerald-400" />
+                        <p className="text-sm font-medium text-emerald-400">Reward Claimed ✓</p>
                       </div>
-                    )}
-                    {!userBet && (
-                      <div className="text-center py-3 text-xs text-zinc-600">No bet placed on this market</div>
                     )}
                   </div>
                 )}
 
+                {/* Open — Place Bet */}
                 {isOpen && (
                   <>
-                    <p className="text-xs text-zinc-500 mb-3">
-                      Select an outcome above, then enter the amount of 0G to bet
-                    </p>
+                    <h3 className="text-sm font-semibold mb-1">Place Bet</h3>
+                    <p className="text-xs text-zinc-500 mb-5">Selected outcome will determine your payout</p>
 
+                    {/* Selected Outcome */}
                     <div className="mb-4">
-                      <label className="text-xs text-zinc-500 mb-1 block">Amount (0G)</label>
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-2">Selected Outcome</label>
+                      {selectedOutcome !== null ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                          <span className="text-sm font-medium text-purple-300">{outcomes[selectedOutcome]?.name}</span>
+                          <Sparkles size={14} className="text-purple-400" />
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-xs text-zinc-600 text-center">
+                          Select an outcome from the panel
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Amount Input */}
+                    <div className="mb-4">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-2">Bet Amount</label>
                       <div className="relative">
                         <input
                           type="number"
                           step="0.001"
                           min="0"
-                          placeholder="0.0"
+                          placeholder="0.00"
                           value={betAmount}
                           onChange={(e) => setBetAmount(e.target.value)}
-                          className="input-field pr-12 text-sm"
+                          className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all pr-14"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">0G</span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400">0G</span>
                       </div>
+                      {betAmount && (
+                        <div className="mt-2 p-3 rounded-xl bg-zinc-900/50 border border-zinc-800 space-y-1.5 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-zinc-500">Pool Share</span>
+                            <span className="text-zinc-300 font-medium tabular-nums">
+                              {selectedOutcome !== null && totalPool > 0n
+                                ? `${(Number(outcomes[selectedOutcome]?.pool || 0n) * 100 / Number(totalPool)).toFixed(1)}%`
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-zinc-500">Est. Payout</span>
+                            <span className="text-emerald-400 font-semibold tabular-nums">
+                              {selectedOutcome !== null && betAmount && outcomes[selectedOutcome]
+                                ? `${(Number(betAmount) * Number(totalPool) / Math.max(1, Number(outcomes[selectedOutcome].pool))).toFixed(3)} 0G`
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-zinc-500">Payout Multiplier</span>
+                            <span className="text-zinc-300 font-medium tabular-nums">
+                              {selectedOutcome !== null ? getPayoutMultiplier(outcomes[selectedOutcome]?.pool || 0n) : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
+                    {/* Confirm Button */}
                     <button
                       onClick={handlePlaceBet}
                       disabled={selectedOutcome === null || !betAmount || !signer || placing}
-                      className="w-full py-3 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 mb-3"
                     >
                       {placing ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <Loader2 size={14} className="animate-spin" /> Placing Bet...
-                        </span>
+                        <span className="flex items-center justify-center gap-2"><Loader2 size={15} className="animate-spin" /> Confirming...</span>
+                      ) : selectedOutcome !== null ? (
+                        `Bet on ${outcomes[selectedOutcome]?.name || '...'}`
                       ) : (
-                        `Bet on ${selectedOutcome !== null && outcomes[selectedOutcome] ? outcomes[selectedOutcome].name : '...'}`
+                        'Select an Outcome'
                       )}
                     </button>
 
+                    {/* TX Status */}
                     {txStatus && (
-                      <div className={`px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+                      <div className={`px-3 py-2.5 rounded-xl text-xs flex items-center gap-2 ${
                         txStatus.includes('success') || txStatus.includes('Bet placed')
-                          ? 'bg-emerald-500/10 text-emerald-400'
+                          ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                           : txStatus.includes('Error') || txStatus.includes('failed')
-                          ? 'bg-red-500/10 text-red-400'
+                          ? 'bg-red-500/10 border border-red-500/20 text-red-400'
                           : 'bg-zinc-800 text-zinc-300'
                       }`}>
                         {txStatus.includes('Error') ? <AlertTriangle size={12} /> : txStatus.includes('success') || txStatus.includes('Bet placed') ? <Check size={12} /> : <Loader2 size={12} className="animate-spin" />}
@@ -435,32 +769,10 @@ export default function MarketDetailPage() {
                     )}
 
                     {txHash && (
-                      <a
-                        href={`${CHAIN.explorerUrl}/tx/${txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300"
-                      >
-                        <ExternalLink size={12} /> View transaction
+                      <a href={`${CHAIN.explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                        <ExternalLink size={12} /> View on Explorer
                       </a>
                     )}
-
-                    <div className="mt-4 pt-4 border-t border-zinc-800 space-y-2 text-xs text-zinc-500">
-                      <div className="flex justify-between">
-                        <span>Outcome selected</span>
-                        <span className="text-white font-medium">
-                          {selectedOutcome !== null ? (outcomes[selectedOutcome]?.name || `#${selectedOutcome + 1}`) : '—'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Pool share</span>
-                        <span className="text-white font-medium">
-                          {selectedOutcome !== null && totalPool > 0n
-                            ? `${(Number(outcomes[selectedOutcome]?.pool || 0n) * 100 / Number(totalPool)).toFixed(1)}%`
-                            : '—'}
-                        </span>
-                      </div>
-                    </div>
                   </>
                 )}
               </div>
