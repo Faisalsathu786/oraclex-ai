@@ -142,20 +142,20 @@ export default function CreateMarketPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-12 sm:h-14 flex items-center">
+          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm">
             <ArrowLeft size={16} /> Back to home
           </Link>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">Create Market</h1>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-bold">Create Market</h1>
           <p className="text-sm text-zinc-500 mt-1">Deploy a new prediction market on 0G</p>
         </div>
 
-        <div className="glass-card p-6 space-y-5">
+        <div className="glass-card p-4 sm:p-6 space-y-4 sm:space-y-5">
           <div className="px-4 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
             <p className="text-xs text-purple-300">
               You are creating a market as the platform owner. Supports 2-15 outcomes.
@@ -203,7 +203,7 @@ export default function CreateMarketPage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">End Date</label>
               <input
@@ -211,7 +211,7 @@ export default function CreateMarketPage() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="input-field text-sm"
+                className="input-field text-sm w-full"
               />
             </div>
             <div>
@@ -220,7 +220,7 @@ export default function CreateMarketPage() {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="input-field text-sm"
+                className="input-field text-sm w-full"
               />
             </div>
           </div>

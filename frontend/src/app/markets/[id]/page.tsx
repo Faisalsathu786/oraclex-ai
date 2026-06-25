@@ -199,14 +199,14 @@ export default function MarketDetailPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center">
-          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-12 sm:h-14 flex items-center">
+          <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm">
             <ArrowLeft size={16} /> Back to markets
           </Link>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {loading && (
           <div className="flex items-center justify-center py-20 text-zinc-500">
             <Loader2 size={20} className="animate-spin mr-2" /> Loading market...
@@ -222,10 +222,10 @@ export default function MarketDetailPage() {
         )}
 
         {!loading && !error && data && (
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Market Info */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="glass-card p-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              <div className="glass-card p-4 sm:p-6">
                 <div className="flex items-center gap-4 mb-4">
                   <span className="inline-flex items-center px-3 py-0.5 rounded text-xs font-medium bg-purple-500/15 text-purple-300">
                     {data.category}
@@ -241,10 +241,10 @@ export default function MarketDetailPage() {
                 {/* Show image */}
                 {data.imageUrl && (
                   <div className="mb-4 rounded-2xl overflow-hidden border border-zinc-800">
-                    <img src={data.imageUrl} alt={data.title} className="w-full h-48 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    <img src={data.imageUrl} alt={data.title} className="w-full h-40 sm:h-48 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   </div>
                 )}
-                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-zinc-500">
                   <span className="flex items-center gap-1"><Clock size={13} /> Ends {endDateStr}</span>
                   <span className="flex items-center gap-1"><Users size={13} /> {Number(data.participantCount)} participants</span>
                   <span className="flex items-center gap-1"><TrendingUp size={13} /> {formatEther(data.totalVolume)} 0G volume</span>
@@ -258,7 +258,7 @@ export default function MarketDetailPage() {
               </div>
 
               {/* Outcomes */}
-              <div className="glass-card p-6">
+              <div className="glass-card p-4 sm:p-6">
                 <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Outcomes</h2>
                 {outcomes.length === 0 ? (
                   <div className="text-center py-8 text-zinc-600 text-sm">No outcomes loaded</div>

@@ -67,26 +67,26 @@ import { useTab } from '@/lib/tab-context'
 
 function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center hero-glow px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center hero-glow px-4 sm:px-6">
       <div className="text-center max-w-lg">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 mb-6 shadow-glow">
-          <span className="text-2xl font-bold text-white">X</span>
+        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 mb-6 shadow-glow">
+          <span className="text-xl sm:text-2xl font-bold text-white">X</span>
         </div>
-        <h1 className="text-4xl font-bold mb-3 gradient-text">OracleX AI</h1>
-        <p className="text-zinc-400 text-lg mb-2 leading-relaxed">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 gradient-text">OracleX AI</h1>
+        <p className="text-zinc-400 text-base sm:text-lg mb-2 leading-relaxed px-2">
           Decentralized prediction markets powered by AI on 0G
         </p>
-        <p className="text-zinc-600 text-sm mb-10">
+        <p className="text-zinc-600 text-xs sm:text-sm mb-8 sm:mb-10">
           Predict real-world outcomes, earn rewards, and climb the leaderboard
         </p>
         <WalletButton onConnect={() => {}} />
-        <div className="mt-12 flex justify-center gap-8 text-xs text-zinc-600">
+        <div className="mt-10 sm:mt-12 flex justify-center gap-4 sm:gap-8 text-xs text-zinc-600 flex-wrap">
           <span>Powered by 0G</span>
-          <span className="text-zinc-700">·</span>
+          <span className="text-zinc-700 hidden sm:inline">·</span>
           <a href="https://chainscan.0g.ai" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">
             Explorer
           </a>
-          <span className="text-zinc-700">·</span>
+          <span className="text-zinc-700 hidden sm:inline">·</span>
           <span>On-Chain Markets</span>
         </div>
       </div>
@@ -135,25 +135,27 @@ function MarketsTab() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Markets</h2>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs sm:text-sm font-semibold text-zinc-500 uppercase tracking-wider">Markets</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
               placeholder="Search markets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-9 py-2 text-sm"
+              className="input-field pl-9 py-2 text-sm w-full"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {CATEGORIES.map((c) => (
               <button
                 key={c}
                 onClick={() => setFilter(c)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                   filter === c
                     ? 'bg-purple-600 text-white'
                     : 'text-zinc-500 hover:text-zinc-300 bg-zinc-800/50'
@@ -345,8 +347,8 @@ function PortfolioTab() {
       <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-6">Portfolio</h2>
 
       {/* Balance + Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="glass-card p-4 sm:p-5 rounded-2xl border-zinc-800">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-xs text-zinc-500 uppercase tracking-wider">Wallet Balance</span>
@@ -397,12 +399,12 @@ function PortfolioTab() {
                   const odds = getOdds(b.pool, b.totalPool)
                   const winAmount = getPotentialWin(b.amount, b.pool, b.totalPool)
                   return (
-                    <div key={b.address} className="glass-card p-5 rounded-2xl hover:border-zinc-700 transition-all">
-                      <div className="flex items-start justify-between gap-4">
+                    <div key={b.address} className="glass-card p-4 sm:p-5 rounded-2xl hover:border-zinc-700 transition-all">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">{b.market}</p>
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-300 text-xs font-medium">
+                          <div className="flex items-center gap-2 sm:gap-3 mt-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-300 text-xs font-medium">
                               <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                               {b.outcomeName}
                             </span>
@@ -698,12 +700,12 @@ function AdminPanel() {
         <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Admin Panel</h2>
       </div>
 
-      <div className="flex gap-1 mb-6 overflow-x-auto tabs-scroll">
+      <div className="flex gap-1 mb-6 overflow-x-auto tabs-scroll -mx-1 px-1">
         {ADMIN_TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
               tab === t ? 'bg-purple-600 text-white' : 'bg-zinc-800/50 text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -720,50 +722,50 @@ function AdminPanel() {
       )}
 
       {tab === 'Overview' && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="glass-card p-5">
-            <BarChart3 size={18} className="text-purple-400 mb-2" />
-            <div className="text-2xl font-bold">{marketCount}</div>
-            <div className="text-xs text-zinc-500 mt-1">Total Markets</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="glass-card p-4 sm:p-5">
+            <BarChart3 size={16} className="text-purple-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{marketCount}</div>
+            <div className="text-xs text-zinc-500 mt-1">Total</div>
           </div>
-          <div className="glass-card p-5">
-            <Flag size={18} className="text-yellow-400 mb-2" />
-            <div className="text-2xl font-bold">{pendingMarkets.length}</div>
+          <div className="glass-card p-4 sm:p-5">
+            <Flag size={16} className="text-yellow-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{pendingMarkets.length}</div>
             <div className="text-xs text-zinc-500 mt-1">Pending</div>
           </div>
-          <div className="glass-card p-5">
-            <Activity size={18} className="text-emerald-400 mb-2" />
-            <div className="text-2xl font-bold">{openMarkets.length}</div>
+          <div className="glass-card p-4 sm:p-5">
+            <Activity size={16} className="text-emerald-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{openMarkets.length}</div>
             <div className="text-xs text-zinc-500 mt-1">Open</div>
           </div>
-          <div className="glass-card p-5">
-            <Gavel size={18} className="text-orange-400 mb-2" />
-            <div className="text-2xl font-bold">{lockedMarkets.length}</div>
+          <div className="glass-card p-4 sm:p-5">
+            <Gavel size={16} className="text-orange-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{lockedMarkets.length}</div>
             <div className="text-xs text-zinc-500 mt-1">Locked</div>
           </div>
-          <div className="glass-card p-5">
-            <Check size={18} className="text-blue-400 mb-2" />
-            <div className="text-2xl font-bold">{resolvedMarkets.length}</div>
+          <div className="glass-card p-4 sm:p-5">
+            <Check size={16} className="text-blue-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{resolvedMarkets.length}</div>
             <div className="text-xs text-zinc-500 mt-1">Resolved</div>
           </div>
         </div>
       )}
 
       {tab === 'Overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="glass-card p-5">
-            <Coins size={18} className="text-purple-400 mb-2" />
-            <div className="text-2xl font-bold">{formatEther(treasuryStats[0] || 0n).slice(0, 8)} 0G</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+          <div className="glass-card p-4 sm:p-5">
+            <Coins size={16} className="text-purple-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{formatEther(treasuryStats[0] || 0n).slice(0, 8)} 0G</div>
             <div className="text-xs text-zinc-500 mt-1">Collected Fees</div>
           </div>
-          <div className="glass-card p-5">
-            <TrendingUp size={18} className="text-purple-400 mb-2" />
-            <div className="text-2xl font-bold">{formatEther(treasuryStats[2] || 0n).slice(0, 8)} 0G</div>
+          <div className="glass-card p-4 sm:p-5">
+            <TrendingUp size={16} className="text-purple-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{formatEther(treasuryStats[2] || 0n).slice(0, 8)} 0G</div>
             <div className="text-xs text-zinc-500 mt-1">Treasury Balance</div>
           </div>
-          <div className="glass-card p-5">
-            <Activity size={18} className="text-purple-400 mb-2" />
-            <div className="text-2xl font-bold">{paused ? 'Paused' : 'Active'}</div>
+          <div className="glass-card p-4 sm:p-5">
+            <Activity size={16} className="text-purple-400 mb-2" />
+            <div className="text-xl sm:text-2xl font-bold">{paused ? 'Paused' : 'Active'}</div>
             <div className="text-xs text-zinc-500 mt-1">Protocol Status</div>
           </div>
         </div>
@@ -780,12 +782,12 @@ function AdminPanel() {
               <div className="px-5 py-8 text-center text-zinc-600 text-sm">No pending markets</div>
             ) : (
               pendingMarkets.map((m) => (
-                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0 mr-4">
+                <div key={m.address} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · Creator: {m.data.creator.slice(0, 6)}...{m.data.creator.slice(-4)}</p>
                   </div>
-                  <button onClick={() => approveMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors whitespace-nowrap">Approve</button>
+                  <button onClick={() => approveMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors whitespace-nowrap self-start sm:self-auto">Approve</button>
                 </div>
               ))
             )}
@@ -800,12 +802,12 @@ function AdminPanel() {
               <div className="px-5 py-8 text-center text-zinc-600 text-sm">No open markets</div>
             ) : (
               openMarkets.map((m) => (
-                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0 mr-4">
+                <div key={m.address} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors · Ends {new Date(Number(m.data.endDate) * 1000).toLocaleDateString()}</p>
                   </div>
-                  <button onClick={() => cancelMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors whitespace-nowrap">Cancel</button>
+                  <button onClick={() => cancelMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors whitespace-nowrap self-start sm:self-auto">Cancel</button>
                 </div>
               ))
             )}
@@ -823,9 +825,9 @@ function AdminPanel() {
                 const isResolving = resolvingAddr === m.address
                 const outcomes = outcomesCache[m.address] || []
                 return (
-                  <div key={m.address} className="px-5 py-4 border-b border-border last:border-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1 min-w-0 mr-4">
+                  <div key={m.address} className="px-4 sm:px-5 py-4 border-b border-border last:border-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{m.data.title}</p>
                         <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors · {Number(formatEther(m.data.totalVolume))} 0G volume</p>
                       </div>
@@ -836,45 +838,49 @@ function AdminPanel() {
                             setResolvingAddr(m.address)
                             setResolveOutcome(null)
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-medium hover:bg-orange-500/30 transition-colors whitespace-nowrap"
+                          className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-medium hover:bg-orange-500/30 transition-colors whitespace-nowrap self-start sm:self-auto"
                         >
                           Resolve
                         </button>
                       )}
                     </div>
                     {isResolving && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {outcomes.length === 0 && (
-                          <span className="flex items-center gap-1 text-xs text-zinc-500"><Loader2 size={12} className="animate-spin" /> Loading outcomes...</span>
-                        )}
-                        {outcomes.map((o, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setResolveOutcome(i)}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                              resolveOutcome === i
-                                ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
-                                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700'
-                            }`}
-                          >
-                            {o.name}
-                          </button>
-                        ))}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {outcomes.length === 0 && (
+                            <span className="flex items-center gap-1 text-xs text-zinc-500"><Loader2 size={12} className="animate-spin" /> Loading outcomes...</span>
+                          )}
+                          {outcomes.map((o, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setResolveOutcome(i)}
+                              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                resolveOutcome === i
+                                  ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
+                                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700'
+                              }`}
+                            >
+                              {o.name}
+                            </button>
+                          ))}
+                        </div>
                         {outcomes.length > 0 && (
-                          <button
-                            onClick={() => resolveMarketAction(m.address, resolveOutcome!)}
-                            disabled={resolveOutcome === null}
-                            className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ml-auto"
-                          >
-                            Confirm Resolve
-                          </button>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => resolveMarketAction(m.address, resolveOutcome!)}
+                              disabled={resolveOutcome === null}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              Confirm Resolve
+                            </button>
+                            <button
+                              onClick={() => { setResolvingAddr(null); setResolveOutcome(null) }}
+                              className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-400 text-xs hover:text-zinc-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         )}
-                        <button
-                          onClick={() => { setResolvingAddr(null); setResolveOutcome(null) }}
-                          className="px-3 py-1 rounded-lg bg-zinc-700 text-zinc-400 text-xs hover:text-zinc-200 transition-colors"
-                        >
-                          Cancel
-                        </button>
                       </div>
                     )}
                   </div>
@@ -890,12 +896,12 @@ function AdminPanel() {
                 Resolved ({resolvedMarkets.length})
               </div>
               {resolvedMarkets.map((m) => (
-                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0 mr-4">
+                <div key={m.address} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · Winning outcome #{Number(m.data.winningOutcome) + 1} · {Number(formatEther(m.data.totalVolume))} 0G</p>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400">Resolved</span>
+                  <span className="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400 whitespace-nowrap">Resolved</span>
                 </div>
               ))}
             </div>
@@ -908,12 +914,12 @@ function AdminPanel() {
                 Cancelled ({cancelledMarkets.length})
               </div>
               {cancelledMarkets.map((m) => (
-                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0 mr-4">
+                <div key={m.address} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(formatEther(m.data.totalVolume))} 0G</p>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">Cancelled</span>
+                  <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 whitespace-nowrap">Cancelled</span>
                 </div>
               ))}
             </div>
@@ -1074,15 +1080,15 @@ export default function Home() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {activeTab === 'Markets' && <MarketsTab />}
         {activeTab === 'Leaderboard' && <LeaderboardTab />}
         {activeTab === 'Portfolio' && <PortfolioTab />}
         {activeTab === 'Admin' && <AdminPanel />}
       </div>
 
-      <div className="border-t border-zinc-800 mt-10">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between text-xs text-zinc-600">
+      <div className="border-t border-zinc-800 mt-8 sm:mt-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
           <span>OracleX — Prediction Markets on 0G</span>
           <div className="flex items-center gap-4">
             <a href={CHAIN.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors flex items-center gap-1">
