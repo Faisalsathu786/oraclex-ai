@@ -68,23 +68,30 @@ import { useTab } from '@/lib/tab-context'
 // ─── LANDING PAGE ──────────────────────────────────────────────────
 
 function LandingPage() {
+  const { connect } = useWallet()
   return (
     <div className="min-h-screen flex flex-col items-center justify-center hero-glow px-4 sm:px-6">
-      <div className="text-center max-w-lg">
-        <div className="inline-flex items-center justify-center mb-6">
-          <img
-            src="https://i.postimg.cc/L5JYWbGf/file-0000000056407209b18554695378658b.png"
-            alt="OracleX"
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-[0_0_40px_rgba(139,92,246,0.3)]"
-          />
+      <div className="text-center max-w-2xl">
+        <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-blue-300 to-purple-300">
+          AI-Powered Prediction Markets on 0G
+        </h1>
+        <p className="text-zinc-400 text-base sm:text-lg mb-8 sm:mb-10 leading-relaxed max-w-xl mx-auto">
+          Predict future events, trade market outcomes, and leverage decentralized AI insights.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+          <button
+            onClick={connect}
+            className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-600/20"
+          >
+            Explore Markets
+          </button>
+          <Link
+            href="/create"
+            className="px-6 py-3 rounded-xl border border-purple-500/30 hover:border-purple-400/50 text-purple-300 hover:text-purple-200 font-semibold text-sm transition-all"
+          >
+            Create Market
+          </Link>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-3 gradient-text">OracleX AI</h1>
-        <p className="text-zinc-400 text-base sm:text-lg mb-2 leading-relaxed px-2">
-          Decentralized prediction markets powered by AI on 0G
-        </p>
-        <p className="text-zinc-600 text-xs sm:text-sm mb-8 sm:mb-10">
-          Predict real-world outcomes, earn rewards, and climb the leaderboard
-        </p>
         <WalletButton onConnect={() => {}} />
         <div className="mt-10 sm:mt-12 flex justify-center gap-4 sm:gap-8 text-xs text-zinc-600 flex-wrap">
           <span>Powered by 0G</span>
@@ -1093,9 +1100,16 @@ export default function Home() {
         {activeTab === 'Admin' && <AdminPanel />}
       </div>
 
-      <div className="border-t border-zinc-800 mt-8 sm:mt-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
-          <span>OracleX — Prediction Markets on 0G</span>
+      <div className="border-t border-purple-500/10 mt-8 sm:mt-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+          <div className="flex items-center gap-2">
+            <img
+              src="https://i.postimg.cc/L5JYWbGf/file-0000000056407209b18554695378658b.png"
+              alt="OracleX"
+              className="h-5 w-auto rounded object-contain opacity-70"
+            />
+            <span>OracleX — Prediction Markets on 0G</span>
+          </div>
           <div className="flex items-center gap-4">
             <a href={CHAIN.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors flex items-center gap-1">
               <ExternalLink size={12} /> Explorer

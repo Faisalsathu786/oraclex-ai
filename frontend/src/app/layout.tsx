@@ -8,12 +8,22 @@ import { Navbar } from '@/components/layout/Navbar'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'OracleX AI - Prediction Markets on 0G',
-  description: 'Decentralized AI-powered prediction market platform on the 0G ecosystem. Predict, earn, and compete on-chain.',
+  title: 'OracleX — AI-Powered Prediction Markets on 0G',
+  description: 'Predict future events, trade market outcomes, and leverage decentralized AI insights on the 0G blockchain.',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   openGraph: {
-    title: 'OracleX AI',
-    description: 'Decentralized prediction markets powered by AI on 0G',
+    title: 'OracleX — AI-Powered Prediction Markets',
+    description: 'Predict future events, trade market outcomes, and leverage decentralized AI insights on 0G.',
     type: 'website',
+    siteName: 'OracleX',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'OracleX — AI-Powered Prediction Markets',
+    description: 'Predict future events, trade market outcomes, and leverage decentralized AI insights on 0G.',
   },
 }
 
