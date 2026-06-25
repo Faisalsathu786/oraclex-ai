@@ -356,18 +356,18 @@ export default function MarketDetailPage() {
                         <div
                           key={i}
                           onClick={() => isOpen && !placing && setSelectedOutcome(i)}
-                          className={`relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer ${
+                          className={`relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer ${
                             isSelected
                               ? 'outcome-card-selected'
                               : isWinner
-                              ? 'border-emerald-500/40 bg-emerald-500/5'
+                              ? 'border-emerald-500/60 bg-emerald-950/60 shadow-[0_0_20px_rgba(16,185,129,0.06)]'
                               : 'outcome-card'
-                          } ${!isOpen && !isWinner ? 'opacity-70' : ''}`}
+                          } ${!isOpen && !isWinner ? 'opacity-60' : ''}`}
                         >
-                          {/* Progress bar */}
+                          {/* Glow line */}
                           <div
                             className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 rounded-full ${
-                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500' : isWinner ? 'bg-emerald-500' : 'bg-slate-700'
+                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]' : isWinner ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-zinc-700/60'
                             }`}
                             style={{ width: `${Math.max(2, poolPct)}%` }}
                           />
@@ -375,8 +375,8 @@ export default function MarketDetailPage() {
                           <div className="p-4 sm:p-5">
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors ${
-                                  isSelected ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : isWinner ? 'bg-emerald-400' : 'bg-zinc-600'
+                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all duration-300 ${
+                                  isSelected ? 'bg-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.7)]' : isWinner ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-zinc-700'
                                 }`} />
                                 <h3 className="text-sm font-semibold truncate">{o.name || `Outcome ${i + 1}`}</h3>
                               </div>
@@ -400,7 +400,7 @@ export default function MarketDetailPage() {
                               </div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Payout</span>
-                                <span className={`font-medium tabular-nums ${isSelected ? 'text-emerald-400' : 'text-zinc-400'}`}>{getPayoutMultiplier(o.pool)}</span>
+                                <span className={`font-medium tabular-nums ${isSelected ? 'text-purple-300' : isWinner ? 'text-emerald-400' : 'text-zinc-400'}`}>{getPayoutMultiplier(o.pool)}</span>
                               </div>
                             </div>
 

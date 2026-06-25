@@ -136,13 +136,14 @@
 
   /* ─── Progress bars ─── */
   .progress-bar {
-    @apply h-1.5 rounded-full bg-slate-800 overflow-hidden;
+    @apply h-1.5 rounded-full overflow-hidden;
+    background: linear-gradient(90deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
   }
-  .progress-fill-green  { @apply h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400; }
-  .progress-fill-yellow { @apply h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400; }
-  .progress-fill-red    { @apply h-full rounded-full bg-gradient-to-r from-red-500 to-red-400; }
-  .progress-fill-purple { @apply h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-400; }
-  .progress-fill-blue   { @apply h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400; }
+  .progress-fill-green  { @apply h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-green-300; }
+  .progress-fill-yellow { @apply h-full rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300; }
+  .progress-fill-red    { @apply h-full rounded-full bg-gradient-to-r from-rose-600 via-red-500 to-rose-400; }
+  .progress-fill-purple { @apply h-full rounded-full bg-gradient-to-r from-purple-500 via-violet-400 to-blue-400; }
+  .progress-fill-blue   { @apply h-full rounded-full bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300; }
 
   /* ─── Market card with gradient border ─── */
   .market-card {
@@ -166,15 +167,19 @@
 
   /* ─── Outcome cards ─── */
   .outcome-card {
-    @apply relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer;
-    background: rgba(15, 23, 42, 0.6);
-    border-color: rgba(51, 65, 85, 0.5);
+    @apply relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer;
+    background: rgba(4, 7, 18, 0.85);
+    border-color: rgba(51, 65, 85, 0.35);
+    backdrop-filter: blur(4px);
   }
-  .outcome-card:hover { border-color: rgba(139, 92, 246, 0.5); }
+  .outcome-card:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(10, 6, 24, 0.9);
+  }
   .outcome-card-selected {
-    border-color: rgba(139, 92, 246, 0.7) !important;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.08)) !important;
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.15), 0 0 0 1px rgba(139, 92, 246, 0.3);
+    border-color: rgba(139, 92, 246, 0.6) !important;
+    background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(30, 58, 138, 0.2)) !important;
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.12), 0 0 0 1px rgba(139, 92, 246, 0.25), inset 0 0 60px rgba(139, 92, 246, 0.03);
   }
 
   /* ─── Stat cards ─── */
