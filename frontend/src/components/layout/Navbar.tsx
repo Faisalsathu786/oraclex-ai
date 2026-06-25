@@ -39,11 +39,6 @@ export function Navbar() {
           {/* Left: Logo + Desktop Tabs */}
           <div className="flex items-center gap-6 sm:gap-10">
             <Link href="/" className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-              <img
-                src="https://i.postimg.cc/L5JYWbGf/file-0000000056407209b18554695378658b.png"
-                alt="OracleX"
-                className="h-5 sm:h-6 w-auto rounded object-contain"
-              />
               <span className="text-sm sm:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-300">OracleX</span>
             </Link>
 
