@@ -1103,11 +1103,6 @@ export default function Home() {
       <div className="border-t border-purple-500/10 mt-8 sm:mt-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
           <div className="flex items-center gap-2">
-            <img
-              src="https://i.postimg.cc/L5JYWbGf/file-0000000056407209b18554695378658b.png"
-              alt="OracleX"
-              className="h-5 w-auto rounded object-contain opacity-70"
-            />
             <span>OracleX — Prediction Markets on 0G</span>
           </div>
           <div className="flex items-center gap-4">

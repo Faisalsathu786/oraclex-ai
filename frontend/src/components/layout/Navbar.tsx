@@ -42,9 +42,9 @@ export function Navbar() {
               <img
                 src="https://i.postimg.cc/L5JYWbGf/file-0000000056407209b18554695378658b.png"
                 alt="OracleX"
-                className="h-10 sm:h-12 w-auto rounded-lg object-contain"
+                className="h-5 sm:h-6 w-auto rounded object-contain"
               />
-              <span className="text-xl sm:text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-300 drop-shadow-sm">OracleX</span>
+              <span className="text-sm sm:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-300">OracleX</span>
             </Link>
 
             {/* Desktop Tabs */}
