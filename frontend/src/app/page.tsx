@@ -71,9 +71,6 @@ function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center hero-glow px-4 sm:px-6">
       <div className="text-center max-w-lg">
-        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 mb-6 shadow-glow">
-          <span className="text-xl sm:text-2xl font-bold text-white">X</span>
-        </div>
         <h1 className="text-3xl sm:text-4xl font-bold mb-3 gradient-text">OracleX AI</h1>
         <p className="text-zinc-400 text-base sm:text-lg mb-2 leading-relaxed px-2">
           Decentralized prediction markets powered by AI on 0G

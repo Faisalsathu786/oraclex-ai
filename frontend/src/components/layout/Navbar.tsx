@@ -39,7 +39,7 @@ export function Navbar() {
           {/* Left: Logo + Desktop Tabs */}
           <div className="flex items-center gap-6 sm:gap-10">
             <Link href="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">OracleX</span>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-300 drop-shadow-sm">OracleX</span>
             </Link>
 
             {/* Desktop Tabs */}
