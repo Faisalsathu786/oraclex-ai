@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Web3Provider } from '@/components/web3/Web3Provider'
+import { TabProvider } from '@/lib/tab-context'
+import { Navbar } from '@/components/layout/Navbar'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
@@ -19,7 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} antialiased`}>
-        <Web3Provider>{children}</Web3Provider>
+        <Web3Provider>
+          <TabProvider>
+            <Navbar />
+            {children}
+          </TabProvider>
+        </Web3Provider>
       </body>
     </html>
   )

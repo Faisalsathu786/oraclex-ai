@@ -11,6 +11,7 @@ import {
   fetchMarketOutcomes,
   fetchUserBet,
   placeBet,
+  claimReward,
   isOwner,
   isSuperAdmin,
   OWNER_WALLET,
@@ -19,6 +20,7 @@ import {
   MARKET_STATE_COLORS,
   MarketData,
   OutcomeData,
+  BetData,
   getAccessManagerContract,
   getTreasuryContract,
   getFactoryContract,
@@ -59,6 +61,7 @@ import {
   Coins,
   List,
 } from 'lucide-react'
+import { useTab } from '@/lib/tab-context'
 
 // ─── LANDING PAGE ──────────────────────────────────────────────────
 
@@ -235,10 +238,12 @@ function LeaderboardTab() {
 // ─── PORTFOLIO ──────────────────────────────────────────────────────
 
 function PortfolioTab() {
-  const { provider, address } = useWallet()
+  const { provider, address, signer } = useWallet()
   const [balance, setBalance] = useState('0')
-  const [bets, setBets] = useState<{ market: string; address: string; data: MarketData; outcomeIndex: number; outcomeName: string; amount: bigint; pool: bigint; totalPool: bigint }[]>([])
+  const [bets, setBets] = useState<{ market: string; address: string; data: MarketData; outcomeIndex: number; outcomeName: string; amount: bigint; pool: bigint; totalPool: bigint; claimedAt: bigint }[]>([])
   const [loading, setLoading] = useState(true)
+  const [claimingAddr, setClaimingAddr] = useState<string | null>(null)
+  const [claimMsg, setClaimMsg] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -272,6 +277,7 @@ function PortfolioTab() {
               amount: bet.amount,
               pool: outcomePool,
               totalPool,
+              claimedAt: bet.claimedAt,
             })
           }
         }
@@ -298,6 +304,32 @@ function PortfolioTab() {
     if (totalPool === 0n || pool === 0n) return '0'
     const win = (Number(formatEther(amount)) * Number(totalPool)) / Number(pool)
     return win.toFixed(4)
+  }
+
+  const handleClaim = async (marketAddress: string) => {
+    if (!signer) return
+    setClaimingAddr(marketAddress)
+    setClaimMsg('')
+    try {
+      await claimReward(marketAddress, signer)
+      setClaimMsg('claimed')
+      setTimeout(() => {
+        setBets(prev => prev.map(b => {
+          if (b.address === marketAddress) {
+            return { ...b, claimedAt: 1n }
+          }
+          return b
+        }))
+        setClaimingAddr(null)
+        setClaimMsg('')
+      }, 1500)
+    } catch (e: any) {
+      setClaimMsg(e.message?.slice(0, 80) || 'Claim failed')
+      setTimeout(() => {
+        setClaimingAddr(null)
+        setClaimMsg('')
+      }, 3000)
+    }
   }
 
   if (loading) {
@@ -418,19 +450,50 @@ function PortfolioTab() {
               <div className="space-y-2">
                 {resolvedBets.map((b) => {
                   const won = Number(b.data.winningOutcome) === b.outcomeIndex
+                  const isClaiming = claimingAddr === b.address
+                  const isClaimed = b.claimedAt > 0n
                   return (
-                    <div key={b.address} className={`glass-card p-4 rounded-2xl flex items-center justify-between border ${won ? 'border-emerald-500/30' : 'border-red-500/20'}`}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                          {won ? 'Won' : 'Lost'}
-                        </span>
-                        <span className="text-sm text-zinc-300 truncate">{b.market}</span>
-                        <span className="text-xs text-zinc-500">{b.outcomeName}</span>
+                    <div key={b.address} className={`glass-card p-4 rounded-2xl flex flex-col border ${won ? 'border-emerald-500/30' : 'border-red-500/20'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                            {won ? 'Won' : 'Lost'}
+                          </span>
+                          <span className="text-sm text-zinc-300 truncate">{b.market}</span>
+                          <span className="text-xs text-zinc-500">{b.outcomeName}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-sm font-mono text-zinc-400 tabular-nums">{formatEther(b.amount)} 0G</span>
+                          {won && <div className="text-xs text-emerald-400 font-medium">{getPotentialWin(b.amount, b.pool, b.totalPool)} 0G payout</div>}
+                        </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className="text-sm font-mono text-zinc-400 tabular-nums">{formatEther(b.amount)} 0G</span>
-                        {won && <div className="text-xs text-emerald-400 font-medium">{getPotentialWin(b.amount, b.pool, b.totalPool)} 0G payout</div>}
-                      </div>
+                      {won && !isClaimed && (
+                        <div className="mt-3 pt-3 border-t border-zinc-800">
+                          {claimMsg && isClaiming ? (
+                            <div className={`text-xs flex items-center gap-2 ${claimMsg === 'claimed' ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {claimMsg === 'claimed' ? <Check size={12} /> : <AlertTriangle size={12} />}
+                              {claimMsg === 'claimed' ? 'Claimed!' : claimMsg}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleClaim(b.address)}
+                              disabled={isClaiming}
+                              className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition-colors disabled:opacity-40"
+                            >
+                              {isClaiming ? (
+                                <span className="flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Claiming...</span>
+                              ) : (
+                                'Claim Reward'
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {won && isClaimed && (
+                        <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center gap-1.5 text-xs text-emerald-400">
+                          <Check size={12} /> Reward claimed
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -445,7 +508,7 @@ function PortfolioTab() {
 
 // ─── ADMIN PANEL ────────────────────────────────────────────────────
 
-const ADMIN_TABS = ['Overview', 'Pending Markets', 'Users', 'Treasury', 'Settings']
+const ADMIN_TABS = ['Overview', 'Markets', 'Users', 'Treasury', 'Settings']
 
 function AdminPanel() {
   const { provider, signer, address } = useWallet()
@@ -460,6 +523,9 @@ function AdminPanel() {
   const [isMod, setIsMod] = useState<boolean | null>(null)
   const [txStatus, setTxStatus] = useState('')
   const [feeInput, setFeeInput] = useState('')
+  const [resolvingAddr, setResolvingAddr] = useState<string | null>(null)
+  const [resolveOutcome, setResolveOutcome] = useState<number | null>(null)
+  const [outcomesCache, setOutcomesCache] = useState<Record<string, OutcomeData[]>>({})
 
   const loadData = useCallback(async () => {
     if (!provider || !address || !isOwner(address)) return
@@ -543,6 +609,33 @@ function AdminPanel() {
     }
   }
 
+  const resolveMarketAction = async (marketAddr: string, winningOutcome: number) => {
+    if (!signer) return
+    setTxStatus(`Resolving market...`)
+    try {
+      const mc = getMarketContract(marketAddr, signer)
+      const tx = await mc.resolveMarket(winningOutcome)
+      await tx.wait()
+      setTxStatus('Market resolved!')
+      setResolvingAddr(null)
+      setResolveOutcome(null)
+      loadData()
+    } catch (e: any) {
+      setTxStatus(`Error: ${e.message?.slice(0, 60)}`)
+    }
+  }
+
+  const fetchOutcomes = async (marketAddr: string) => {
+    if (outcomesCache[marketAddr]) return outcomesCache[marketAddr]
+    try {
+      const outcomes = await fetchMarketOutcomes(marketAddr)
+      setOutcomesCache(prev => ({ ...prev, [marketAddr]: outcomes }))
+      return outcomes
+    } catch {
+      return []
+    }
+  }
+
   const togglePause = async () => {
     if (!signer) return
     setTxStatus(paused ? 'Resuming protocol...' : 'Pausing protocol...')
@@ -585,6 +678,10 @@ function AdminPanel() {
   }
 
   const pendingMarkets = markets.filter((m) => m.data.state === 0)
+  const openMarkets = markets.filter((m) => m.data.state === 1)
+  const lockedMarkets = markets.filter((m) => m.data.state === 2)
+  const resolvedMarkets = markets.filter((m) => m.data.state === 3)
+  const cancelledMarkets = markets.filter((m) => m.data.state === 4)
 
   if (loading) {
     return (
@@ -623,12 +720,37 @@ function AdminPanel() {
       )}
 
       {tab === 'Overview' && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="glass-card p-5">
             <BarChart3 size={18} className="text-purple-400 mb-2" />
             <div className="text-2xl font-bold">{marketCount}</div>
             <div className="text-xs text-zinc-500 mt-1">Total Markets</div>
           </div>
+          <div className="glass-card p-5">
+            <Flag size={18} className="text-yellow-400 mb-2" />
+            <div className="text-2xl font-bold">{pendingMarkets.length}</div>
+            <div className="text-xs text-zinc-500 mt-1">Pending</div>
+          </div>
+          <div className="glass-card p-5">
+            <Activity size={18} className="text-emerald-400 mb-2" />
+            <div className="text-2xl font-bold">{openMarkets.length}</div>
+            <div className="text-xs text-zinc-500 mt-1">Open</div>
+          </div>
+          <div className="glass-card p-5">
+            <Gavel size={18} className="text-orange-400 mb-2" />
+            <div className="text-2xl font-bold">{lockedMarkets.length}</div>
+            <div className="text-xs text-zinc-500 mt-1">Locked</div>
+          </div>
+          <div className="glass-card p-5">
+            <Check size={18} className="text-blue-400 mb-2" />
+            <div className="text-2xl font-bold">{resolvedMarkets.length}</div>
+            <div className="text-xs text-zinc-500 mt-1">Resolved</div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'Overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="glass-card p-5">
             <Coins size={18} className="text-purple-400 mb-2" />
             <div className="text-2xl font-bold">{formatEther(treasuryStats[0] || 0n).slice(0, 8)} 0G</div>
@@ -640,52 +762,160 @@ function AdminPanel() {
             <div className="text-xs text-zinc-500 mt-1">Treasury Balance</div>
           </div>
           <div className="glass-card p-5">
-            <Flag size={18} className="text-purple-400 mb-2" />
-            <div className="text-2xl font-bold">{pendingMarkets.length}</div>
-            <div className="text-xs text-zinc-500 mt-1">Pending Approval</div>
+            <Activity size={18} className="text-purple-400 mb-2" />
+            <div className="text-2xl font-bold">{paused ? 'Paused' : 'Active'}</div>
+            <div className="text-xs text-zinc-500 mt-1">Protocol Status</div>
           </div>
         </div>
       )}
 
-      {tab === 'Pending Markets' && (
-        <div>
-          {pendingMarkets.length === 0 ? (
-            <div className="text-center py-12 text-zinc-600 text-sm">No pending markets</div>
-          ) : (
-            <div className="glass-card overflow-hidden">
-              {pendingMarkets.map((m) => (
+      {tab === 'Markets' && (
+        <div className="space-y-6">
+          {/* Pending */}
+          <div className="glass-card overflow-hidden">
+            <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
+              Pending ({pendingMarkets.length})
+            </div>
+            {pendingMarkets.length === 0 ? (
+              <div className="px-5 py-8 text-center text-zinc-600 text-sm">No pending markets</div>
+            ) : (
+              pendingMarkets.map((m) => (
                 <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
                   <div className="flex-1 min-w-0 mr-4">
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · Creator: {m.data.creator.slice(0, 6)}...{m.data.creator.slice(-4)}</p>
                   </div>
-                  <button
-                    onClick={() => approveMarket(m.address)}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors whitespace-nowrap"
-                  >
-                    Approve
-                  </button>
+                  <button onClick={() => approveMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors whitespace-nowrap">Approve</button>
                 </div>
-              ))}
-              {openMarkets.length > 0 && (
-                <div className="glass-card overflow-hidden mt-6">
-                  <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">Open Markets</div>
-                  {openMarkets.map((m) => (
-                    <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
+              ))
+            )}
+          </div>
+
+          {/* Open */}
+          <div className="glass-card overflow-hidden">
+            <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
+              Open ({openMarkets.length})
+            </div>
+            {openMarkets.length === 0 ? (
+              <div className="px-5 py-8 text-center text-zinc-600 text-sm">No open markets</div>
+            ) : (
+              openMarkets.map((m) => (
+                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <p className="text-sm font-medium truncate">{m.data.title}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors · Ends {new Date(Number(m.data.endDate) * 1000).toLocaleDateString()}</p>
+                  </div>
+                  <button onClick={() => cancelMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors whitespace-nowrap">Cancel</button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Locked — Resolve */}
+          <div className="glass-card overflow-hidden">
+            <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
+              Locked — Ready for Resolution ({lockedMarkets.length})
+            </div>
+            {lockedMarkets.length === 0 ? (
+              <div className="px-5 py-8 text-center text-zinc-600 text-sm">No locked markets</div>
+            ) : (
+              lockedMarkets.map((m) => {
+                const isResolving = resolvingAddr === m.address
+                const outcomes = outcomesCache[m.address] || []
+                return (
+                  <div key={m.address} className="px-5 py-4 border-b border-border last:border-0">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 min-w-0 mr-4">
                         <p className="text-sm font-medium truncate">{m.data.title}</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors · {Number(formatEther(m.data.totalVolume))} 0G volume</p>
                       </div>
-                      <button
-                        onClick={() => cancelMarket(m.address)}
-                        className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors whitespace-nowrap"
-                      >
-                        Cancel Market
-                      </button>
+                      {!isResolving && (
+                        <button
+                          onClick={async () => {
+                            const o = await fetchOutcomes(m.address)
+                            setResolvingAddr(m.address)
+                            setResolveOutcome(null)
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-medium hover:bg-orange-500/30 transition-colors whitespace-nowrap"
+                        >
+                          Resolve
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    {isResolving && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {outcomes.length === 0 && (
+                          <span className="flex items-center gap-1 text-xs text-zinc-500"><Loader2 size={12} className="animate-spin" /> Loading outcomes...</span>
+                        )}
+                        {outcomes.map((o, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setResolveOutcome(i)}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                              resolveOutcome === i
+                                ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
+                                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700'
+                            }`}
+                          >
+                            {o.name}
+                          </button>
+                        ))}
+                        {outcomes.length > 0 && (
+                          <button
+                            onClick={() => resolveMarketAction(m.address, resolveOutcome!)}
+                            disabled={resolveOutcome === null}
+                            className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ml-auto"
+                          >
+                            Confirm Resolve
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setResolvingAddr(null); setResolveOutcome(null) }}
+                          className="px-3 py-1 rounded-lg bg-zinc-700 text-zinc-400 text-xs hover:text-zinc-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* Resolved */}
+          {resolvedMarkets.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
+                Resolved ({resolvedMarkets.length})
+              </div>
+              {resolvedMarkets.map((m) => (
+                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <p className="text-sm font-medium truncate">{m.data.title}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · Winning outcome #{Number(m.data.winningOutcome) + 1} · {Number(formatEther(m.data.totalVolume))} 0G</p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400">Resolved</span>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
+
+          {/* Cancelled */}
+          {cancelledMarkets.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <div className="px-5 py-3 border-b border-border text-xs text-zinc-500 font-medium">
+                Cancelled ({cancelledMarkets.length})
+              </div>
+              {cancelledMarkets.map((m) => (
+                <div key={m.address} className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <p className="text-sm font-medium truncate">{m.data.title}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(formatEther(m.data.totalVolume))} 0G</p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400">Cancelled</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -787,72 +1017,14 @@ function AdminPanel() {
   )
 }
 
-// ─── APP HEADER ─────────────────────────────────────────────────────
-
-const TABS = ['Markets', 'Leaderboard', 'Portfolio', 'Admin']
-
-function AppHeader({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (t: string) => void }) {
-  const { isOwnerWallet } = useWallet()
-  const showTabs = isOwnerWallet ? TABS : TABS.slice(0, 3)
-
-  return (
-    <div className="border-b border-zinc-800">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-10">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
-              X
-            </div>
-            <span className="text-lg font-bold tracking-tight">OracleX</span>
-          </div>
-          <div className="hidden md:flex items-center gap-2">
-            {showTabs.map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                className={`px-6 py-2.5 rounded-xl text-base font-semibold tracking-wide transition-all duration-200 ${
-                  activeTab === t 
-                    ? t === 'Markets' ? 'text-emerald-300 bg-emerald-500/15 shadow-sm shadow-emerald-500/20' 
-                      : t === 'Leaderboard' ? 'text-amber-300 bg-amber-500/15 shadow-sm shadow-amber-500/20'
-                      : t === 'Portfolio' ? 'text-blue-300 bg-blue-500/15 shadow-sm shadow-blue-500/20'
-                      : 'text-purple-300 bg-purple-500/15 shadow-sm shadow-purple-500/20'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {isOwnerWallet && (
-            <Link href="/create" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors">
-              <Plus size={14} /> Create Market
-            </Link>
-          )}
-          <WalletButton />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── MAIN PAGE ──────────────────────────────────────────────────────
 
 export default function Home() {
   const { isConnected, address, chainId } = useWallet()
-  const [activeTab, setActiveTab] = useState('Markets')
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-
-  const { isOwnerWallet } = useWallet()
-  const showTabs = isOwnerWallet ? TABS : TABS.slice(0, 3)
+  const { activeTab } = useTab()
 
   // Chain warning
   const onWrongChain = isConnected && chainId !== 0 && chainId !== CHAIN.chainId
-
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [activeTab])
 
   const handleSwitchChain = async () => {
     const eth = (window as any).ethereum
@@ -884,8 +1056,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <AppHeader activeTab={activeTab} setActiveTab={setActiveTab} />
-
       {/* Chain Warning */}
       {onWrongChain && (
         <div className="border-b border-yellow-800 bg-yellow-500/5">
@@ -903,28 +1073,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* Mobile Tabs */}
-      <div className="md:hidden border-b border-zinc-800 px-4 py-2">
-        <div className="flex gap-1 overflow-x-auto tabs-scroll">
-          {showTabs.map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === t ? 'bg-zinc-800 text-white' : 'text-zinc-500'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-          {isOwnerWallet && (
-            <Link href="/create" className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white whitespace-nowrap">
-              + New Market
-            </Link>
-          )}
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeTab === 'Markets' && <MarketsTab />}

@@ -142,14 +142,10 @@ export default function CreateMarketPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center">
           <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> Back to home
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
-            <span className="text-sm font-bold">OracleX</span>
-          </div>
         </div>
       </div>
 

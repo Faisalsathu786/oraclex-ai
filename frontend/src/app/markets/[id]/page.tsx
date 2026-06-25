@@ -17,7 +17,9 @@ import {
   getMarketContract,
   getRpcProvider,
   placeBet,
+  claimReward,
   OWNER_WALLET,
+  BetData,
 } from '@/lib/contracts'
 import {
   ArrowLeft,
@@ -48,6 +50,8 @@ export default function MarketDetailPage() {
   const [placing, setPlacing] = useState(false)
   const [txHash, setTxHash] = useState('')
   const [txStatus, setTxStatus] = useState('')
+  const [userBet, setUserBet] = useState<BetData | null>(null)
+  const [claiming, setClaiming] = useState(false)
 
   const loadMarket = useCallback(async () => {
     if (isNaN(marketIndex)) return
@@ -93,6 +97,58 @@ export default function MarketDetailPage() {
   }, [marketIndex])
 
   useEffect(() => { loadMarket() }, [loadMarket])
+
+  // Fetch user bet info
+  useEffect(() => {
+    if (!marketAddress || !address) return
+    const loadBet = async () => {
+      try {
+        const rpc = getRpcProvider()
+        const mc = getMarketContract(marketAddress, rpc)
+        const hb = await mc.hasBet(address)
+        if (hb) {
+          const raw = await mc.bets(address)
+          setUserBet({
+            user: raw.user,
+            outcomeIndex: raw.outcomeIndex,
+            amount: raw.amount,
+            claimedAt: raw.claimedAt,
+          })
+        } else {
+          setUserBet(null)
+        }
+      } catch {
+        setUserBet(null)
+      }
+    }
+    loadBet()
+  }, [marketAddress, address])
+
+  const handleClaim = async () => {
+    if (!signer || !marketAddress) return
+    setClaiming(true)
+    setTxStatus('Claiming reward...')
+    setTxHash('')
+    try {
+      const hash = await claimReward(marketAddress, signer)
+      setTxHash(hash)
+      setTxStatus('Reward claimed successfully!')
+      // Refresh bet data
+      const rpc = getRpcProvider()
+      const mc = getMarketContract(marketAddress, rpc)
+      const raw = await mc.bets(address!)
+      setUserBet({
+        user: raw.user,
+        outcomeIndex: raw.outcomeIndex,
+        amount: raw.amount,
+        claimedAt: raw.claimedAt,
+      })
+      loadMarket()
+    } catch (e: any) {
+      setTxStatus(e.message?.slice(0, 100) || 'Claim failed')
+    }
+    setClaiming(false)
+  }
 
   const handlePlaceBet = async () => {
     if (!signer || !marketAddress || selectedOutcome === null || !betAmount) return
@@ -143,13 +199,9 @@ export default function MarketDetailPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center">
           <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
-            <ArrowLeft size={16} /> Back
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs">X</div>
-            <span className="text-sm font-bold">OracleX</span>
+            <ArrowLeft size={16} /> Back to markets
           </Link>
         </div>
       </div>
@@ -254,19 +306,82 @@ export default function MarketDetailPage() {
             {/* Betting Panel */}
             <div className="lg:col-span-1">
               <div className="glass-card p-6 sticky top-6">
-                <h2 className="text-sm font-semibold mb-4">Place Bet</h2>
+                {/* User Bet Info */}
+                {userBet && (
+                  <div className="mb-4 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700">
+                    <p className="text-xs text-zinc-500 mb-1">Your Bet</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{outcomes[Number(userBet.outcomeIndex)]?.name || `#${Number(userBet.outcomeIndex) + 1}`}</span>
+                      <span className="text-sm font-bold tabular-nums">{formatEther(userBet.amount)} 0G</span>
+                    </div>
+                    {userBet.claimedAt > 0n && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+                        <Check size={12} /> Claimed
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {!isOpen && !isResolved && (
+                {!isOpen && !isResolved && data.state !== 4 && !userBet && (
                   <div className="text-center py-8 text-zinc-500">
                     <Clock size={24} className="mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Betting is not open for this market</p>
                   </div>
                 )}
 
-                {isResolved && (
+                {/* Cancelled state */}
+                {data.state === 4 && (
                   <div className="text-center py-8 text-zinc-500">
-                    <Check size={24} className="mx-auto mb-2 text-emerald-400" />
-                    <p className="text-sm">Market has been resolved</p>
+                    <AlertTriangle size={24} className="mx-auto mb-2 text-red-400" />
+                    <p className="text-sm text-red-400">Market was cancelled</p>
+                    {userBet && (
+                      <p className="text-xs text-zinc-600 mt-2">
+                        Your {formatEther(userBet.amount)} 0G bet on &quot;{outcomes[Number(userBet.outcomeIndex)]?.name}&quot; is impacted.
+                        Contact admin for refund.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Resolved — Claim */}
+                {isResolved && (
+                  <div>
+                    <div className="text-center mb-4">
+                      <Check size={24} className="mx-auto mb-2 text-emerald-400" />
+                      <p className="text-sm text-zinc-400">Market resolved</p>
+                      <p className="text-xs text-emerald-400 font-medium mt-1">
+                        Winner: {outcomes[Number(data.winningOutcome)]?.name || `#${Number(data.winningOutcome) + 1}`}
+                      </p>
+                    </div>
+                    {userBet && Number(userBet.outcomeIndex) === Number(data.winningOutcome) && userBet.claimedAt === 0n && (
+                      <button
+                        onClick={handleClaim}
+                        disabled={claiming || !signer}
+                        className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {claiming ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 size={14} className="animate-spin" /> Claiming...
+                          </span>
+                        ) : (
+                          `Claim Reward`
+                        )}
+                      </button>
+                    )}
+                    {userBet && Number(userBet.outcomeIndex) !== Number(data.winningOutcome) && (
+                      <div className="text-center py-3 text-xs text-zinc-500">
+                        <AlertTriangle size={14} className="mx-auto mb-1 text-red-400" />
+                        You bet on {outcomes[Number(userBet.outcomeIndex)]?.name}. Better luck next time!
+                      </div>
+                    )}
+                    {userBet && Number(userBet.outcomeIndex) === Number(data.winningOutcome) && userBet.claimedAt > 0n && (
+                      <div className="text-center py-3 flex items-center justify-center gap-2 text-sm text-emerald-400">
+                        <Check size={16} /> Reward claimed
+                      </div>
+                    )}
+                    {!userBet && (
+                      <div className="text-center py-3 text-xs text-zinc-600">No bet placed on this market</div>
+                    )}
                   </div>
                 )}
 

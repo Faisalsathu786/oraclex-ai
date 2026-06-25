@@ -11,13 +11,14 @@ export function getRpcProvider(): JsonRpcProvider {
   return _rpcProvider
 }
 
-export type MarketState = 0 | 1 | 2 | 3
+export type MarketState = 0 | 1 | 2 | 3 | 4
 
 export const MARKET_STATE_LABELS: Record<MarketState, string> = {
   0: 'Pending',
   1: 'Open',
   2: 'Locked',
   3: 'Resolved',
+  4: 'Cancelled',
 }
 
 export const MARKET_STATE_COLORS: Record<MarketState, string> = {
@@ -25,6 +26,7 @@ export const MARKET_STATE_COLORS: Record<MarketState, string> = {
   1: 'text-emerald-400 bg-emerald-500/10',
   2: 'text-orange-400 bg-orange-500/10',
   3: 'text-blue-400 bg-blue-500/10',
+  4: 'text-red-400 bg-red-500/10',
 }
 
 export interface MarketData {
@@ -143,6 +145,33 @@ export async function fetchUserBet(address: string, userAddress: string, provide
 export async function placeBet(marketAddress: string, outcomeIndex: number, amount: string, signer: JsonRpcSigner): Promise<string> {
   const mc = getMarketContract(marketAddress, signer)
   const tx = await mc.placeBet(outcomeIndex, { value: parseEther(amount) })
+  await tx.wait()
+  return tx.hash
+}
+
+export async function claimReward(marketAddress: string, signer: JsonRpcSigner): Promise<string> {
+  const mc = getMarketContract(marketAddress, signer)
+  const tx = await mc.claimReward()
+  await tx.wait()
+  return tx.hash
+}
+
+export async function fetchUserHasBet(marketAddress: string, userAddress: string, provider?: BrowserProvider): Promise<boolean> {
+  const rpc = provider || getRpcProvider()
+  const mc = getMarketContract(marketAddress, rpc)
+  return await mc.hasBet(userAddress)
+}
+
+export async function resolveMarket(marketAddress: string, winningOutcome: number, signer: JsonRpcSigner): Promise<string> {
+  const mc = getMarketContract(marketAddress, signer)
+  const tx = await mc.resolveMarket(winningOutcome)
+  await tx.wait()
+  return tx.hash
+}
+
+export async function rejectMarket(marketAddress: string, signer: JsonRpcSigner): Promise<string> {
+  const mc = getMarketContract(marketAddress, signer)
+  const tx = await mc.rejectMarket()
   await tx.wait()
   return tx.hash
 }
