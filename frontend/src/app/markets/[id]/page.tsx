@@ -12,7 +12,8 @@ import {
   MarketData,
   OutcomeData,
   MARKET_STATE_LABELS,
-  MARKET_STATE_COLORS,
+  getStateClass,
+  getCategoryClass,
   getFactoryContract,
   getMarketContract,
   getRpcProvider,
@@ -275,15 +276,11 @@ export default function MarketDetailPage() {
               {/* SECTION 1 — Market Header */}
               <div className="glass-card p-5 sm:p-6 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium">
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  <span className={`badge ${getCategoryClass(data.category)}`}>
+                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
                     {data.category}
                   </span>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                    data.state === 1 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                    data.state === 3 ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                    'bg-zinc-500/10 border-zinc-500/20 text-zinc-400'
-                  }`}>
+                  <span className={`badge ${getStateClass(data.state)}`}>
                     {MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || 'Unknown'}
                   </span>
                 </div>
@@ -360,18 +357,18 @@ export default function MarketDetailPage() {
                         <div
                           key={i}
                           onClick={() => isOpen && !placing && setSelectedOutcome(i)}
-                          className={`relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer group ${
+                          className={`relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer ${
                             isSelected
-                              ? 'border-purple-500 bg-gradient-to-br from-purple-500/10 to-blue-500/5 shadow-lg shadow-purple-500/10'
+                              ? 'outcome-card-selected'
                               : isWinner
                               ? 'border-emerald-500/40 bg-emerald-500/5'
-                              : 'border-zinc-800 hover:border-zinc-600 bg-zinc-900/30 hover:bg-zinc-900/50'
+                              : 'outcome-card'
                           } ${!isOpen && !isWinner ? 'opacity-70' : ''}`}
                         >
                           {/* Progress bar */}
                           <div
                             className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 rounded-full ${
-                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500' : isWinner ? 'bg-emerald-500' : 'bg-zinc-700'
+                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500' : isWinner ? 'bg-emerald-500' : 'bg-slate-700'
                             }`}
                             style={{ width: `${Math.max(2, poolPct)}%` }}
                           />
@@ -388,10 +385,15 @@ export default function MarketDetailPage() {
                               {isSelected && <Sparkles size={14} className="text-purple-400 flex-shrink-0 animate-pulse" />}
                             </div>
 
-                            <div className="space-y-2">
+                            {/* Probability bar */}
+                            <div className="progress-bar mb-3">
+                              <div className="progress-fill-purple" style={{ width: `${Math.max(3, poolPct)}%` }} />
+                            </div>
+
+                            <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Probability</span>
-                                <span className={`font-bold tabular-nums ${isSelected ? 'text-purple-300' : 'text-zinc-300'}`}>{poolPct.toFixed(1)}%</span>
+                                <span className={`font-bold tabular-nums ${poolPct >= 70 ? 'prob-high' : poolPct >= 40 ? 'prob-mid' : 'prob-low'}`}>{poolPct.toFixed(1)}%</span>
                               </div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Pool</span>

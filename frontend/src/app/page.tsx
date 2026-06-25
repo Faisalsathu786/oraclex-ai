@@ -17,7 +17,9 @@ import {
   OWNER_WALLET,
   CATEGORIES,
   MARKET_STATE_LABELS,
-  MARKET_STATE_COLORS,
+  getStateClass,
+  getCategoryClass,
+  getProbBarClass,
   MarketData,
   OutcomeData,
   BetData,
@@ -97,10 +99,10 @@ function LandingPage() {
 // ─── MARKET LIST ────────────────────────────────────────────────────
 
 function StateBadge({ state }: { state: number }) {
-  const s = state as 0 | 1 | 2 | 3
+  const s = state as 0 | 1 | 2 | 3 | 4
   const label = MARKET_STATE_LABELS[s] || 'Unknown'
-  const color = MARKET_STATE_COLORS[s] || 'text-zinc-400 bg-zinc-500/10'
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>
+  const cls = getStateClass(state)
+  return <span className={`badge ${cls}`}>{label}</span>
 }
 
 function MarketsTab() {
@@ -196,11 +198,11 @@ function MarketsTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((m, i) => (
             <Link key={m.address} href={`/markets/${Number(m.data.id)}`}>
-              <div className="glass-card p-5 rounded-2xl hover:border-zinc-600 hover:bg-zinc-900/30 transition-all cursor-pointer h-full flex flex-col justify-between group">
+              <div className="market-card group h-full flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-3">
                     <StateBadge state={m.data.state} />
-                    <span className="text-xs text-zinc-500">{m.data.category}</span>
+                    <span className={`badge ${getCategoryClass(m.data.category)}`}>{m.data.category}</span>
                   </div>
                   <p className="text-sm font-medium text-white line-clamp-2 mb-4 leading-snug group-hover:text-purple-300 transition-colors">{m.data.title}</p>
                 </div>
@@ -348,15 +350,15 @@ function PortfolioTab() {
 
       {/* Balance + Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-        <div className="glass-card p-4 sm:p-5 rounded-2xl border-zinc-800">
+        <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <div className="w-2 h-2 rounded-full bg-purple-400" />
             <span className="text-xs text-zinc-500 uppercase tracking-wider">Wallet Balance</span>
           </div>
           <div className="text-2xl font-bold tabular-nums text-white">{balance}</div>
           <div className="text-xs text-zinc-600 mt-1">0G Tokens</div>
         </div>
-        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+        <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-purple-400" />
             <span className="text-xs text-zinc-500 uppercase tracking-wider">Total Invested</span>
@@ -364,7 +366,7 @@ function PortfolioTab() {
           <div className="text-2xl font-bold tabular-nums text-white">{totalInvested.toFixed(4)}</div>
           <div className="text-xs text-zinc-600 mt-1">0G Tokens</div>
         </div>
-        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+        <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-blue-400" />
             <span className="text-xs text-zinc-500 uppercase tracking-wider">Open Positions</span>
@@ -372,7 +374,7 @@ function PortfolioTab() {
           <div className="text-2xl font-bold tabular-nums text-white">{openBets.length}</div>
           <div className="text-xs text-zinc-600 mt-1">Active bets</div>
         </div>
-        <div className="glass-card p-5 rounded-2xl border-zinc-800">
+        <div className="stat-card">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-xs text-zinc-500 uppercase tracking-wider">Resolved</span>

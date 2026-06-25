@@ -21,12 +21,45 @@ export const MARKET_STATE_LABELS: Record<MarketState, string> = {
   4: 'Cancelled',
 }
 
-export const MARKET_STATE_COLORS: Record<MarketState, string> = {
-  0: 'text-yellow-400 bg-yellow-500/10',
-  1: 'text-emerald-400 bg-emerald-500/10',
-  2: 'text-orange-400 bg-orange-500/10',
-  3: 'text-blue-400 bg-blue-500/10',
-  4: 'text-red-400 bg-red-500/10',
+export const MARKET_STATE_CLASSES: Record<MarketState, string> = {
+  0: 'state-pending',
+  1: 'state-open',
+  2: 'state-locked',
+  3: 'state-resolved',
+  4: 'state-cancelled',
+}
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  Crypto: 'cat-crypto',
+  Sports: 'cat-sports',
+  DeFi: 'cat-defi',
+  Politics: 'cat-politics',
+  Technology: 'cat-technology',
+  Science: 'cat-science',
+  Entertainment: 'cat-entertainment',
+  AI: 'cat-ai',
+  Meme: 'cat-meme',
+  'Layer 1': 'cat-layer1',
+}
+
+export function getCategoryClass(category: string): string {
+  return CATEGORY_COLORS[category] || 'cat-crypto'
+}
+
+export function getStateClass(state: number): string {
+  return MARKET_STATE_CLASSES[state as MarketState] || 'badge'
+}
+
+export function getProbColor(pct: number): string {
+  if (pct >= 70) return 'prob-high'
+  if (pct >= 40) return 'prob-mid'
+  return 'prob-low'
+}
+
+export function getProbBarClass(pct: number): string {
+  if (pct >= 70) return 'progress-fill-green'
+  if (pct >= 40) return 'progress-fill-yellow'
+  return 'progress-fill-red'
 }
 
 export interface MarketData {
