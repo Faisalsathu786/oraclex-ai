@@ -48,6 +48,7 @@ import {
   Activity,
   Trophy,
   Calendar,
+  FileText,
 } from 'lucide-react'
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ export default function MarketDetailPage() {
   const [userBet, setUserBet] = useState<BetData | null>(null)
   const [claiming, setClaiming] = useState(false)
   const [accordionOpen, setAccordionOpen] = useState(false)
+  const [descOpen, setDescOpen] = useState(false)
 
   const loadMarket = useCallback(async () => {
     if (isNaN(marketIndex)) return
@@ -287,55 +289,52 @@ export default function MarketDetailPage() {
 
                 <h1 className="text-xl sm:text-2xl font-bold leading-tight tracking-tight">{data.title}</h1>
 
-                {data.description && (
-                  <p className="text-sm text-zinc-400 leading-relaxed">{data.description}</p>
-                )}
-
                 {data.imageUrl && (
-                  <div className="rounded-xl overflow-hidden border border-zinc-800">
+                  <div className="rounded-xl overflow-hidden border border-slate-800">
                     <img src={data.imageUrl} alt={data.title} className="w-full h-44 sm:h-56 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 pt-2 border-t border-zinc-800/50">
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
-                    <Calendar size={13} /> Ends {endDateStr}
-                  </span>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
-                    Creator {data.creator.slice(0, 6)}...{data.creator.slice(-4)}
-                  </span>
-                  <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 hover:text-purple-400 transition-colors">
-                    <ExternalLink size={13} /> View Contract
-                  </a>
+                <div className="flex items-center gap-3 text-xs text-zinc-500 pt-2 border-t border-zinc-800/50">
+                  <Calendar size={13} className="text-amber-400" />
+                  <span>Resolution: {endDateStr}</span>
+                  <span className="text-zinc-700">·</span>
+                  <Shield size={13} className="text-purple-400" />
+                  <span>Source: On-Chain</span>
                 </div>
               </div>
 
               {/* SECTION 2 — Market Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="glass-card p-3 sm:p-4 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="stat-card">
                   <TrendingUp size={16} className="mx-auto mb-1.5 text-purple-400" />
                   <div className="text-lg sm:text-xl font-bold tabular-nums">{Number(formatEther(data.totalVolume)).toFixed(1)}</div>
-                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Total Volume (0G)</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Volume (0G)</div>
                 </div>
-                <div className="glass-card p-3 sm:p-4 text-center">
+                <div className="stat-card">
                   <Users size={16} className="mx-auto mb-1.5 text-blue-400" />
                   <div className="text-lg sm:text-xl font-bold">{Number(data.participantCount)}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Participants</div>
                 </div>
-                <div className="glass-card p-3 sm:p-4 text-center">
+                <div className="stat-card">
                   <Clock size={16} className="mx-auto mb-1.5 text-amber-400" />
                   <div className="text-lg sm:text-xl font-bold">{timeRemaining}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Time Left</div>
                 </div>
-                <div className="glass-card p-3 sm:p-4 text-center">
+                <div className="stat-card">
                   <Activity size={16} className="mx-auto mb-1.5 text-emerald-400" />
                   <div className="text-lg sm:text-xl font-bold">{MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || '—'}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Status</div>
                 </div>
-                <div className="glass-card p-3 sm:p-4 text-center">
-                  <Shield size={16} className="mx-auto mb-1.5 text-purple-400" />
-                  <div className="text-lg sm:text-xl font-bold">On-Chain</div>
-                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Resolution</div>
+                <div className="stat-card">
+                  <Calendar size={16} className="mx-auto mb-1.5 text-purple-400" />
+                  <div className="text-[10px] sm:text-xs font-semibold leading-tight">{endDateStr}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Resolution Date</div>
+                </div>
+                <div className="stat-card">
+                  <Coins size={16} className="mx-auto mb-1.5 text-cyan-400" />
+                  <div className="text-lg sm:text-xl font-bold tabular-nums">{Number(formatEther(totalPool)).toFixed(1)}</div>
+                  <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Liquidity (0G)</div>
                 </div>
               </div>
 
@@ -492,7 +491,41 @@ export default function MarketDetailPage() {
                 </div>
               )}
 
-              {/* SECTION 6 — Resolution Info */}
+              {/* SECTION 6 — Description */}
+              {data.description && (
+                <div className="glass-card overflow-hidden">
+                  <button
+                    onClick={() => setAccordionOpen(!accordionOpen)}
+                    className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-slate-900/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText size={16} className="text-zinc-500" />
+                      <div className="text-left">
+                        <h3 className="text-sm font-semibold text-zinc-300">Market Description</h3>
+                        <p className="text-xs text-zinc-600">Full details and context</p>
+                      </div>
+                    </div>
+                    {descOpen ? <ChevronUp size={18} className="text-zinc-500" /> : <ChevronDown size={18} className="text-zinc-500" />}
+                  </button>
+                  {descOpen && (
+                    <div className="px-5 sm:px-6 pb-6 border-t border-zinc-800/50 pt-4 animate-in slide-in-from-top">
+                      <div className="prose prose-invert prose-sm max-w-none">
+                        <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{data.description}</p>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500 pt-3 border-t border-zinc-800/50">
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
+                          <Users size={12} /> Creator {data.creator.slice(0, 6)}...{data.creator.slice(-4)}
+                        </span>
+                        <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 hover:text-purple-400 transition-colors">
+                          <ExternalLink size={12} /> View Contract
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SECTION 7 — Resolution Info */}
               <div className="glass-card overflow-hidden">
                 <button
                   onClick={() => setAccordionOpen(!accordionOpen)}
@@ -534,7 +567,7 @@ export default function MarketDetailPage() {
                 )}
               </div>
 
-              {/* SECTION 7 — Comments & Activity */}
+              {/* SECTION 8 — Activity Feed */}
               <div className="glass-card p-5 sm:p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <MessageCircle size={16} className="text-zinc-500" />
