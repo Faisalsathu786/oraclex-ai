@@ -272,6 +272,7 @@ export default function AdminView() {
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {m.data.creator.slice(0, 6)}...{m.data.creator.slice(-4)}</p>
                   </div>
                   <button onClick={() => approveMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-300 text-xs font-medium hover:bg-zinc-600 transition-colors whitespace-nowrap">Approve</button>
+                    <button onClick={() => cancelMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 text-xs font-medium hover:bg-red-500/25 transition-colors whitespace-nowrap ml-2">Cancel</button>
                 </div>
               ))
             )}
@@ -288,7 +289,7 @@ export default function AdminView() {
                     <p className="text-sm font-medium truncate">{m.data.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5">{m.data.category} · {Number(m.data.participantCount)} bettors</p>
                   </div>
-                  <button onClick={() => cancelMarket(m.address)} className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-300 text-xs font-medium hover:bg-zinc-600 transition-colors whitespace-nowrap">Cancel</button>
+                  
                 </div>
               ))
             )}
