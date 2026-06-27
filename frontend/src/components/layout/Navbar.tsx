@@ -5,111 +5,100 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { WalletButton } from '@/components/web3/WalletButton'
 import { useWallet } from '@/components/web3/Web3Provider'
-import { useTab } from '@/lib/tab-context'
 import { isOwner } from '@/lib/contracts'
-import { Plus, Menu, X } from 'lucide-react'
 
-const TABS = ['Markets', 'Leaderboard', 'Portfolio', 'Admin']
-
-const tabColors: Record<string, string> = {
-  Markets: 'text-emerald-300 bg-emerald-500/15 shadow-sm shadow-emerald-500/20',
-  Leaderboard: 'text-amber-300 bg-amber-500/15 shadow-sm shadow-amber-500/20',
-  Portfolio: 'text-blue-300 bg-blue-500/15 shadow-sm shadow-blue-500/20',
-  Admin: 'text-purple-300 bg-purple-500/15 shadow-sm shadow-purple-500/20',
-}
+const NAV_ITEMS = [
+  { label: 'Markets', href: '/markets' },
+  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Admin', href: '/admin' },
+]
 
 export function Navbar() {
   const pathname = usePathname()
   const { isConnected, address } = useWallet()
-  const { activeTab, setActiveTab } = useTab()
   const isOwnerWallet = isConnected && address && isOwner(address)
-  const showTabs = isOwnerWallet ? TABS : TABS.slice(0, 3)
-  const isHome = pathname === '/'
+  const visibleItems = isOwnerWallet ? NAV_ITEMS : NAV_ITEMS.filter(i => i.label !== 'Admin')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const handleTabClick = (t: string) => {
-    setActiveTab(t)
-    setMenuOpen(false)
-  }
-
   return (
-    <nav className="sticky top-0 z-50 border-b border-purple-500/10 bg-black/70 backdrop-blur-2xl supports-[backdrop-filter]:bg-black/50">
+    <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-black/70 backdrop-blur-2xl supports-[backdrop-filter]:bg-black/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 sm:h-16 items-center justify-between">
-          {/* Left: Logo + Desktop Tabs */}
           <div className="flex items-center gap-6 sm:gap-10">
-            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-              <span className="text-sm sm:text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-300">OracleX</span>
+            <Link href="/" className="text-sm sm:text-base font-bold tracking-tight text-white">
+              OracleX
             </Link>
 
-            {/* Desktop Tabs */}
-            {isHome && isConnected && (
+            {isConnected && (
               <div className="hidden lg:flex items-center gap-1.5">
-                {showTabs.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setActiveTab(t)}
-                    className={`px-4 xl:px-6 py-2 xl:py-2.5 rounded-xl text-sm xl:text-base font-semibold tracking-wide transition-all duration-200 ${
-                      activeTab === t
-                        ? tabColors[t]
-                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+                {visibleItems.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        isActive ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>
 
-          {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {isHome && isOwnerWallet && (
+            {isConnected && isOwnerWallet && (
               <Link
                 href="/create"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
               >
-                <Plus size={14} /> <span className="hidden xl:inline">Create Market</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                Create Market
               </Link>
             )}
             <WalletButton />
-            {/* Hamburger — mobile only */}
-            {isHome && isConnected && (
+            {isConnected && (
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="lg:hidden p-2 -mr-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                 aria-label="Toggle menu"
               >
-                {menuOpen ? <X size={20} /> : <Menu size={20} />}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{menuOpen ? <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></> : <><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></>}</svg>
               </button>
             )}
           </div>
         </div>
 
-        {/* Mobile Menu Dropdown */}
-        {menuOpen && isHome && isConnected && (
-          <div className="lg:hidden border-t border-zinc-800 pb-3 pt-2 animate-in slide-in-from-top">
+        {menuOpen && isConnected && (
+          <div className="lg:hidden border-t border-zinc-800 pb-3 pt-2">
             <div className="flex flex-col gap-1">
-              {showTabs.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => handleTabClick(t)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === t
-                      ? tabColors[t]
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+              {visibleItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
               {isOwnerWallet && (
                 <Link
                   href="/create"
                   onClick={() => setMenuOpen(false)}
-                  className="mt-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors"
+                  className="mt-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
                 >
-                  <Plus size={14} /> Create Market
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                  Create Market
                 </Link>
               )}
             </div>
