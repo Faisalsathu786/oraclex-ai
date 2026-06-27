@@ -239,7 +239,7 @@ export default function MarketDetailPage() {
           {outcomes.length === 0 ? (
             <div className="card p-10 text-center text-zinc-600 text-sm">No outcomes loaded</div>
           ) : (
-            <div className="space-y-3">
+            <div className={`grid gap-3 ${outcomes.length <= 4 ? 'sm:grid-cols-2' : ''}`}>
               {outcomes.map((o, i) => {
                 const poolPct = totalPool > 0n ? Math.round(Number(o.pool * 10000n) / Number(totalPool)) / 100 : 0
                 const isSelected = selectedOutcome === i
@@ -247,82 +247,129 @@ export default function MarketDetailPage() {
                 const myBet = userBet && Number(userBet.outcomeIndex) === i
 
                 return (
-                  <div
-                    key={i}
-                    className={`card overflow-hidden transition-all duration-200 ${
-                      isSelected ? 'border-zinc-600' : isWinner ? 'border-green-500/40' : ''
-                    }`}
-                  >
-                    {/* Outcome header - clickable */}
+                  <div key={i} className="relative">
                     <button
                       onClick={() => {
                         if (isOpen && !placing) {
-                          setSelectedOutcome(isSelected ? null : i)
-                          if (!isSelected) setBetAmount('')
+                          if (isSelected) {
+                            setSelectedOutcome(null)
+                            setBetAmount('')
+                          } else {
+                            setSelectedOutcome(i)
+                            setBetAmount('')
+                          }
                         }
                       }}
-                      className="w-full text-left p-5"
+                      disabled={!isOpen && !isWinner && !myBet}
+                      className={`w-full text-left rounded-xl border transition-all duration-200 ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-950/30'
+                          : isWinner
+                          ? 'border-green-500/50 bg-green-950/20'
+                          : myBet
+                          ? 'border-zinc-600 bg-zinc-900/50'
+                          : 'border-zinc-800 bg-transparent hover:border-zinc-700 hover:bg-zinc-900/30'
+                      } ${isSelected && isOpen ? 'rounded-b-none border-b-0' : ''}`}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelected ? 'bg-blue-500' : isWinner ? 'bg-green-500' : 'bg-zinc-700'}`} />
-                          <h3 className="text-sm font-semibold">{o.name || `Outcome ${i + 1}`}</h3>
-                          {isWinner && <span className="tag tag-green text-[10px]">Won</span>}
-                          {myBet && <span className="tag tag-blue text-[10px]">Your Bet</span>}
-                        </div>
-                        <span className="text-xs font-mono tabular-nums text-zinc-400">{Number(formatEther(o.pool)).toFixed(2)} 0G</span>
-                      </div>
-
-                      {/* Probability bar */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="bar">
-                            <div className={`bar-fill ${isWinner ? 'bar-green' : isSelected ? 'bar-blue' : 'bar-zinc'}`} style={{ width: `${Math.max(2, poolPct)}%` }} />
+                      <div className="p-4">
+                        {/* Top row: indicator + name + badges */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isSelected ? 'border-blue-500' : isWinner ? 'border-green-500' : myBet ? 'border-zinc-500' : 'border-zinc-700'
+                            }`}>
+                              {(isSelected || isWinner || myBet) && (
+                                <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-blue-500' : isWinner ? 'bg-green-500' : 'bg-zinc-500'}`} />
+                              )}
+                            </div>
+                            <h3 className="text-sm font-semibold truncate">{o.name || `Outcome ${i + 1}`}</h3>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {isWinner && <span className="tag tag-green text-[10px]">Won</span>}
+                            {myBet && !isWinner && <span className="tag tag-blue text-[10px]">Selected</span>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-zinc-400 tabular-nums">{poolPct.toFixed(1)}%</span>
-                          <span className="text-zinc-600">{getPayoutMultiplier(o.pool)}</span>
+
+                        {/* Probability bar */}
+                        <div className="mb-2">
+                          <div className="bar">
+                            <div className={`bar-fill ${
+                              isSelected ? 'bar-blue' : isWinner ? 'bar-green' : myBet ? 'bar-zinc' : 'bar-zinc'
+                            }`} style={{ width: `${Math.max(2, poolPct)}%` }} />
+                          </div>
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-bold tabular-nums text-white">{poolPct.toFixed(1)}%</span>
+                            <span className="text-xs text-zinc-500">{Number(formatEther(o.pool)).toFixed(2)} 0G</span>
+                          </div>
+                          <span className="text-xs text-zinc-600 font-mono">{getPayoutMultiplier(o.pool)}</span>
                         </div>
                       </div>
                     </button>
 
-                    {/* Bet panel - visible when selected */}
+                    {/* Bet panel - slides in below selected outcome */}
                     {isSelected && isOpen && (
-                      <div className="px-5 pb-5 pt-0 border-t border-zinc-800 mt-0">
-                        <div className="pt-4 space-y-3">
-                          <div>
-                            <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1.5">Bet Amount (0G)</label>
-                            <div className="flex gap-2">
+                      <div className="rounded-b-xl border border-t-0 border-blue-500 bg-blue-950/20 p-4">
+                        <div className="space-y-3">
+                          {/* Preset amounts */}
+                          <div className="flex items-center gap-2">
+                            {['1', '5', '10', '50'].map((amt) => (
+                              <button
+                                key={amt}
+                                onClick={() => setBetAmount(amt)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  betAmount === amt
+                                    ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                                    : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
+                                }`}
+                              >
+                                {amt} 0G
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Input + Bet button */}
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
                               <input
                                 type="number"
                                 step="0.001"
                                 min="0"
-                                placeholder="0.00"
+                                placeholder="Custom amount"
                                 value={betAmount}
                                 onChange={e => setBetAmount(e.target.value)}
-                                className="input flex-1"
+                                className="input pr-10"
                               />
-                              <button
-                                onClick={handlePlaceBet}
-                                disabled={!betAmount || Number(betAmount) <= 0 || placing}
-                                className="btn btn-blue min-w-[100px]"
-                              >
-                                {placing ? 'Placing...' : 'Place Bet'}
-                              </button>
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">0G</span>
                             </div>
+                            <button
+                              onClick={handlePlaceBet}
+                              disabled={!betAmount || Number(betAmount) <= 0 || placing}
+                              className="btn btn-primary px-6"
+                            >
+                              {placing ? 'Placing...' : 'Place Bet'}
+                            </button>
                           </div>
 
+                          {/* Payout estimate */}
                           {betAmount && Number(betAmount) > 0 && (
-                            <div className="flex items-center gap-4 text-xs text-zinc-500">
-                              <span>Pool share: <span className="text-zinc-300 tabular-nums">{poolPct.toFixed(1)}%</span></span>
-                              <span>Est. payout: <span className="text-zinc-300 tabular-nums">{(Number(betAmount) * Number(totalPool) / Math.max(1, Number(o.pool || 1n))).toFixed(3)} 0G</span></span>
-                              <span>Multiplier: <span className="text-zinc-300">{getPayoutMultiplier(o.pool)}</span></span>
+                            <div className="flex items-center gap-3 text-xs text-zinc-500">
+                              <span>Payout: <span className="text-green-400 font-semibold tabular-nums">{(Number(betAmount) * Number(totalPool) / Math.max(1, Number(o.pool || 1n))).toFixed(3)} 0G</span></span>
+                              <span>x{getPayoutMultiplier(o.pool).replace('x', '')}</span>
                             </div>
                           )}
 
                           {txStatus && (
-                            <div className={`px-3 py-2 rounded-lg text-xs ${txStatus.includes('Error') || txStatus.includes('failed') ? 'bg-red-500/10 text-red-400' : txStatus.includes('placed') || txStatus.includes('claimed') ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800 text-zinc-300'}`}>
+                            <div className={`px-3 py-2 rounded-lg text-xs ${
+                              txStatus.includes('Error') || txStatus.includes('failed')
+                                ? 'bg-red-500/10 text-red-400'
+                                : txStatus.includes('placed') || txStatus.includes('Reward') || txStatus.includes('claimed')
+                                ? 'bg-green-500/10 text-green-400'
+                                : 'bg-zinc-800 text-zinc-300'
+                            }`}>
                               {txStatus}
                               {txHash && (
                                 <a href={`${CHAIN.explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="ml-2 underline">View tx</a>
@@ -333,13 +380,11 @@ export default function MarketDetailPage() {
                       </div>
                     )}
 
-                    {/* Selected on resolved - show claim inline */}
+                    {/* Claim button on winner */}
                     {isWinner && userBet && userBet.claimedAt === 0n && (
-                      <div className="px-5 pb-5 pt-0">
-                        <button onClick={handleClaim} disabled={claiming} className="btn btn-green w-full">
-                          {claiming ? 'Claiming...' : 'Claim Reward'}
-                        </button>
-                      </div>
+                      <button onClick={handleClaim} disabled={claiming} className="w-full rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium p-3 transition-colors">
+                        {claiming ? 'Claiming Reward...' : 'Claim Reward'}
+                      </button>
                     )}
                   </div>
                 )
