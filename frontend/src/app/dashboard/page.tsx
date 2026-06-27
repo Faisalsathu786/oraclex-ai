@@ -5,6 +5,6 @@ import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
   const router = useRouter()
-  useEffect(() => { router.replace('/') }, [router])
+  useEffect(() => { router.replace('/markets') }, [router])
   return null
 }
