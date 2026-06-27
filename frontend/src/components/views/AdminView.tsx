@@ -174,7 +174,7 @@ export default function AdminView() {
       <div className="space-y-4">
         <div className="grid grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="glass-card p-5"><div className="h-8 bg-zinc-800 rounded animate-pulse" /></div>
+            <div key={i} className="card p-5"><div className="h-8 bg-zinc-800 rounded animate-pulse" /></div>
           ))}
         </div>
       </div>
@@ -212,38 +212,38 @@ export default function AdminView() {
       {tab === 'Overview' && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Total Markets</p>
               <p className="text-2xl font-bold">{marketCount}</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Pending</p>
               <p className="text-2xl font-bold">{pendingMarkets.length}</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Open</p>
               <p className="text-2xl font-bold">{openMarkets.length}</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Locked</p>
               <p className="text-2xl font-bold">{lockedMarkets.length}</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Resolved</p>
               <p className="text-2xl font-bold">{resolvedMarkets.length}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Collected Fees</p>
               <p className="text-xl font-bold tabular-nums">{formatEther(treasuryStats[0] || 0n).slice(0, 8)} 0G</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Treasury Balance</p>
               <p className="text-xl font-bold tabular-nums">{formatEther(treasuryStats[2] || 0n).slice(0, 8)} 0G</p>
             </div>
-            <div className="glass-card p-5">
+            <div className="card p-5">
               <p className="text-xs text-zinc-500 mb-1">Protocol Status</p>
               <p className="text-xl font-bold">{paused ? 'Paused' : 'Active'}</p>
             </div>
@@ -253,7 +253,7 @@ export default function AdminView() {
 
       {tab === 'Markets' && (
         <div className="space-y-6">
-          <div className="glass-card overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-5 py-3 border-b border-zinc-800 text-xs text-zinc-500 font-medium">Pending ({pendingMarkets.length})</div>
             {pendingMarkets.length === 0 ? (
               <div className="px-5 py-8 text-center text-zinc-600 text-sm">No pending markets</div>
@@ -270,7 +270,7 @@ export default function AdminView() {
             )}
           </div>
 
-          <div className="glass-card overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-5 py-3 border-b border-zinc-800 text-xs text-zinc-500 font-medium">Open ({openMarkets.length})</div>
             {openMarkets.length === 0 ? (
               <div className="px-5 py-8 text-center text-zinc-600 text-sm">No open markets</div>
@@ -287,7 +287,7 @@ export default function AdminView() {
             )}
           </div>
 
-          <div className="glass-card overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="px-5 py-3 border-b border-zinc-800 text-xs text-zinc-500 font-medium">Locked ({lockedMarkets.length})</div>
             {lockedMarkets.length === 0 ? (
               <div className="px-5 py-8 text-center text-zinc-600 text-sm">No locked markets</div>
@@ -338,7 +338,7 @@ export default function AdminView() {
       )}
 
       {tab === 'Treasury' && (
-        <div className="glass-card p-5 space-y-4">
+        <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between py-3 border-b border-zinc-800">
             <span className="text-sm">Collected Fees</span>
             <span className="text-sm font-mono tabular-nums">{formatEther(treasuryStats[0] || 0n).slice(0, 8)} 0G</span>
@@ -355,7 +355,7 @@ export default function AdminView() {
       )}
 
       {tab === 'Settings' && (
-        <div className="glass-card p-5 space-y-6">
+        <div className="card p-5 space-y-6">
           <div>
             <h3 className="text-sm font-medium mb-4">Protocol Settings</h3>
             <div className="flex items-center justify-between py-3 border-b border-zinc-800">
@@ -373,7 +373,7 @@ export default function AdminView() {
           <div>
             <h3 className="text-sm font-medium mb-4">Protocol Fee</h3>
             <div className="flex items-center gap-3">
-              <input type="text" value={feeInput} onChange={e => setFeeInput(e.target.value)} className="input-field text-sm w-32" />
+              <input type="text" value={feeInput} onChange={e => setFeeInput(e.target.value)} className="input text-sm w-32" />
               <span className="text-xs text-zinc-500">0G</span>
               <button onClick={updateFee} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors">Update</button>
             </div>
@@ -382,7 +382,7 @@ export default function AdminView() {
       )}
 
       {tab === 'Users' && (
-        <div className="glass-card p-5">
+        <div className="card p-5">
           <h3 className="text-sm font-medium mb-4">Moderator Management</h3>
           <div className="flex items-center gap-3 mb-4">
             <input
@@ -390,7 +390,7 @@ export default function AdminView() {
               placeholder="0x..."
               value={userAddress}
               onChange={e => setUserAddress(e.target.value)}
-              className="input-field text-sm flex-1 font-mono"
+              className="input text-sm flex-1 font-mono"
             />
             <button onClick={checkMod} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors">Check</button>
           </div>

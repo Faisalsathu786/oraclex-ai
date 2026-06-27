@@ -4,200 +4,241 @@
 
 @layer base {
   :root {
-    --bg-primary: 0 0% 0%;
-    --bg-secondary: 222 47% 5%;
-    --bg-tertiary: 222 47% 8%;
-    --fg-primary: 0 0% 97%;
-    --fg-secondary: 0 0% 65%;
-    --fg-tertiary: 0 0% 45%;
-    --border: 222 30% 12%;
-
-    /* Brand */
-    --purple: 258 90% 66%;
-    --purple-bg: 258 90% 66% / 0.15;
-    --blue: 217 91% 60%;
-    --blue-bg: 217 91% 60% / 0.15;
-
-    /* Semantic */
-    --success: 160 84% 39%;
-    --success-bg: 160 84% 39% / 0.15;
-    --warning: 38 92% 50%;
-    --warning-bg: 38 92% 50% / 0.15;
-    --danger: 0 84% 60%;
-    --danger-bg: 0 84% 60% / 0.15;
-    --info: 217 91% 60%;
-    --info-bg: 217 91% 60% / 0.15;
-
-    /* Outcome probability */
-    --prob-high: 160 84% 39%;
-    --prob-mid: 38 92% 50%;
-    --prob-low: 0 84% 60%;
-
-    /* Category colors */
-    --cat-crypto: 258 90% 66%;
-    --cat-ai: 217 91% 60%;
-    --cat-defi: 160 84% 39%;
-    --cat-sports: 38 92% 50%;
-    --cat-politics: 0 84% 60%;
-    --cat-tech: 262 83% 58%;
-    --cat-science: 190 95% 39%;
+    --bg: #000000;
+    --bg-card: #0a0a0f;
+    --bg-elevated: #111115;
+    --border: #1a1a1e;
+    --border-hover: #2a2a2e;
+    --text-primary: #ffffff;
+    --text-secondary: #71717a;
+    --text-tertiary: #52525b;
+    --accent: #3b82f6;
+    --accent-bg: rgba(59, 130, 246, 0.1);
+    --success: #22c55e;
+    --success-bg: rgba(34, 197, 94, 0.1);
+    --warning: #eab308;
+    --warning-bg: rgba(234, 179, 8, 0.1);
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.1);
   }
 
   body {
-    background: #000000;
-    color: hsl(var(--fg-primary));
+    background: var(--bg);
+    color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-  }
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 }
 
 @layer components {
-  /* ─── Glass cards ─── */
-  .glass-card {
-    @apply border rounded-2xl;
-    background: rgba(15, 23, 42, 0.4);
-    border-color: rgba(51, 65, 85, 0.4);
-    backdrop-filter: blur(20px);
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
   }
 
-  .glass-card-hover {
-    @apply glass-card transition-all duration-300 cursor-pointer;
+  .card-hover {
+    @apply card transition-all duration-200 cursor-pointer;
   }
-  .glass-card-hover:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-    box-shadow: 0 4px 30px rgba(139, 92, 246, 0.08);
+  .card-hover:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-elevated);
   }
 
-  /* ─── Buttons ─── */
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   .btn-primary {
-    @apply px-4 py-2.5 rounded-xl text-sm font-semibold bg-purple-600 text-white
-           hover:bg-purple-500 active:scale-[0.98] transition-all
-           disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100;
+    @apply btn;
+    background: #18181b;
+    color: #fafafa;
+    border: 1px solid #27272a;
   }
-  .btn-secondary {
-    @apply px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-700
-           bg-slate-800/50 text-slate-300 hover:text-white hover:border-slate-600 transition-colors;
+  .btn-primary:hover:not(:disabled) {
+    background: #27272a;
+    border-color: #3f3f46;
   }
-  .btn-success {
-    @apply btn-primary bg-emerald-600 hover:bg-emerald-500;
+
+  .btn-outline {
+    @apply btn;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
   }
+  .btn-outline:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .btn-blue {
+    @apply btn;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+  .btn-blue:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.25);
+  }
+
+  .btn-green {
+    @apply btn;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+  }
+  .btn-green:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.25);
+  }
+
   .btn-danger {
-    @apply px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-600 text-white
-           hover:bg-red-500 active:scale-[0.98] transition-all;
+    @apply btn;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
   }
 
-  /* ─── Inputs ─── */
-  .input-field {
-    @apply w-full px-4 py-2.5 rounded-xl text-sm border border-slate-700
-           bg-slate-900/60 text-slate-100 placeholder:text-slate-500
-           focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20
-           transition-all duration-200;
+  .input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    background: #09090b;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus {
+    border-color: var(--accent);
+  }
+  .input::placeholder {
+    color: var(--text-tertiary);
   }
 
-  /* ─── Badges ─── */
-  .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border;
-  }
-  .badge-green  { @apply bg-emerald-500/10 border-emerald-500/25 text-emerald-400; }
-  .badge-blue   { @apply bg-blue-500/10    border-blue-500/25    text-blue-400; }
-  .badge-yellow { @apply bg-amber-500/10   border-amber-500/25   text-amber-400; }
-  .badge-red    { @apply bg-red-500/10     border-red-500/25     text-red-400; }
-  .badge-orange { @apply bg-orange-500/10  border-orange-500/25  text-orange-400; }
-  .badge-purple { @apply bg-purple-500/10  border-purple-500/25  text-purple-400; }
-
-  /* ─── Market state → semantic mapping ─── */
-  .state-pending   { @apply badge badge-orange; }
-  .state-open      { @apply badge badge-green; }
-  .state-locked    { @apply badge badge-yellow; }
-  .state-resolved  { @apply badge badge-blue; }
-  .state-cancelled { @apply badge badge-red; }
-
-  /* ─── Category → color mapping ─── */
-  .cat-crypto        { @apply bg-purple-500/10 border-purple-500/25 text-purple-400; }
-  .cat-sports        { @apply bg-orange-500/10  border-orange-500/25  text-orange-400; }
-  .cat-defi          { @apply bg-emerald-500/10 border-emerald-500/25 text-emerald-400; }
-  .cat-politics      { @apply bg-red-500/10     border-red-500/25     text-red-400; }
-  .cat-technology    { @apply bg-violet-500/10  border-violet-500/25  text-violet-400; }
-  .cat-science       { @apply bg-cyan-500/10    border-cyan-500/25    text-cyan-400; }
-  .cat-entertainment { @apply bg-pink-500/10    border-pink-500/25    text-pink-400; }
-  .cat-ai            { @apply bg-blue-500/10    border-blue-500/25    text-blue-400; }
-  .cat-meme          { @apply bg-pink-500/10    border-pink-500/25    text-pink-400; }
-  .cat-layer1        { @apply bg-cyan-500/10    border-cyan-500/25    text-cyan-400; }
-
-  /* ─── Probability colors ─── */
-  .prob-high { @apply text-emerald-400; }
-  .prob-mid  { @apply text-amber-400; }
-  .prob-low  { @apply text-red-400; }
-
-  /* ─── Progress bars ─── */
-  .progress-bar {
-    @apply h-1.5 rounded-full overflow-hidden;
-    background: linear-gradient(90deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
-  }
-  .progress-fill-green  { @apply h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-green-300; }
-  .progress-fill-yellow { @apply h-full rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300; }
-  .progress-fill-red    { @apply h-full rounded-full bg-gradient-to-r from-rose-600 via-red-500 to-rose-400; }
-  .progress-fill-purple { @apply h-full rounded-full bg-gradient-to-r from-purple-500 via-violet-400 to-blue-400; }
-  .progress-fill-blue   { @apply h-full rounded-full bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300; }
-
-  /* ─── Market card with gradient border ─── */
-  .market-card {
-    @apply glass-card p-5 rounded-2xl overflow-hidden relative transition-all duration-300 cursor-pointer;
-  }
-  .market-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, hsl(var(--purple)), hsl(var(--blue)), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .market-card:hover::before { opacity: 1; }
-  .market-card:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-    box-shadow: 0 8px 40px rgba(139, 92, 246, 0.08);
-    transform: translateY(-1px);
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
   }
 
-  /* ─── Outcome cards ─── */
-  .outcome-card {
-    @apply relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer;
-    background: rgba(4, 7, 18, 0.85);
-    border-color: rgba(51, 65, 85, 0.35);
-    backdrop-filter: blur(4px);
+  .tag-green {
+    background: var(--success-bg);
+    border-color: rgba(34, 197, 94, 0.25);
+    color: #4ade80;
   }
-  .outcome-card:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-    background: rgba(10, 6, 24, 0.9);
+  .tag-yellow {
+    background: var(--warning-bg);
+    border-color: rgba(234, 179, 8, 0.25);
+    color: #facc15;
   }
-  .outcome-card-selected {
-    border-color: rgba(139, 92, 246, 0.6) !important;
-    background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(30, 58, 138, 0.2)) !important;
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.12), 0 0 0 1px rgba(139, 92, 246, 0.25), inset 0 0 60px rgba(139, 92, 246, 0.03);
+  .tag-blue {
+    background: var(--accent-bg);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+  }
+  .tag-red {
+    background: var(--danger-bg);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+  }
+  .tag-zinc {
+    border-color: var(--border);
+    color: var(--text-secondary);
   }
 
-  /* ─── Stat cards ─── */
-  .stat-card {
-    @apply glass-card p-4 text-center transition-colors duration-200;
+  .bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #18181b;
   }
-  .stat-card:hover { border-color: rgba(139, 92, 246, 0.3); }
 
-  /* ─── Misc ─── */
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400;
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .bar-blue { background: #3b82f6; }
+  .bar-green { background: #22c55e; }
+  .bar-yellow { background: #eab308; }
+  .bar-red { background: #ef4444; }
+  .bar-zinc { background: #52525b; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #18181b 25%, #222226 50%, #18181b 75%);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s infinite;
+    border-radius: 6px;
   }
-  .hero-glow {
-    background: radial-gradient(ellipse at 50% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 60%);
+
+  @keyframes skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
-  .tabs-scroll {
-    @apply flex gap-1 overflow-x-auto pb-1;
-    scrollbar-width: none;
+
+  .stat {
+    @apply card p-4 sm:p-5;
   }
-  .tabs-scroll::-webkit-scrollbar { display: none; }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+  .tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .tab-active {
+    color: var(--text-primary);
+    background: #18181b;
+    border: 1px solid var(--border);
+  }
 }

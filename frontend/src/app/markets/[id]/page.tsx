@@ -221,12 +221,12 @@ export default function MarketDetailPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center">
-            <Wallet size={28} className="text-purple-400" />
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-zinc-800/30 flex items-center justify-center">
+            <Wallet size={28} className="text-zinc-300" />
           </div>
           <h2 className="text-lg font-bold mb-2">Connect Wallet</h2>
           <p className="text-zinc-500 text-sm mb-6">Connect your wallet to view and bet on prediction markets</p>
-          <button onClick={connect} className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold hover:opacity-90 transition-all shadow-lg shadow-purple-500/20">
+          <button onClick={connect} className="w-full py-3 rounded-xl bg-zinc-800 text-white text-sm font-semibold hover:opacity-90 transition-all ">
             Connect Wallet
           </button>
         </div>
@@ -251,7 +251,7 @@ export default function MarketDetailPage() {
         {loading && (
           <div className="flex items-center justify-center py-32">
             <div className="text-center">
-              <Loader2 size={32} className="animate-spin mx-auto mb-4 text-purple-400" />
+              <Loader2 size={32} className="animate-spin mx-auto mb-4 text-zinc-300" />
               <p className="text-sm text-zinc-500">Loading market data...</p>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function MarketDetailPage() {
             </div>
             <p className="text-zinc-400 text-lg mb-2">Market Not Found</p>
             <p className="text-zinc-600 text-sm mb-6">{error}</p>
-            <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+            <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 transition-colors">
               <ArrowLeft size={14} /> Back to Markets
             </Link>
           </div>
@@ -276,7 +276,7 @@ export default function MarketDetailPage() {
             <div className="lg:col-span-2 space-y-6">
 
               {/* SECTION 1 — Market Header */}
-              <div className="glass-card p-5 sm:p-6 space-y-4">
+              <div className="card p-5 sm:p-6 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`badge ${getCategoryClass(data.category)}`}>
                     <div className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
@@ -299,39 +299,39 @@ export default function MarketDetailPage() {
                   <Calendar size={13} className="text-amber-400" />
                   <span>Resolution: {endDateStr}</span>
                   <span className="text-zinc-700">·</span>
-                  <Shield size={13} className="text-purple-400" />
+                  <Shield size={13} className="text-zinc-300" />
                   <span>Source: On-Chain</span>
                 </div>
               </div>
 
               {/* SECTION 2 — Market Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="stat-card">
-                  <TrendingUp size={16} className="mx-auto mb-1.5 text-purple-400" />
+                <div className="stat">
+                  <TrendingUp size={16} className="mx-auto mb-1.5 text-zinc-300" />
                   <div className="text-lg sm:text-xl font-bold tabular-nums">{Number(formatEther(data.totalVolume)).toFixed(1)}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Volume (0G)</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat">
                   <Users size={16} className="mx-auto mb-1.5 text-blue-400" />
                   <div className="text-lg sm:text-xl font-bold">{Number(data.participantCount)}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Participants</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat">
                   <Clock size={16} className="mx-auto mb-1.5 text-amber-400" />
                   <div className="text-lg sm:text-xl font-bold">{timeRemaining}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Time Left</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat">
                   <Activity size={16} className="mx-auto mb-1.5 text-emerald-400" />
                   <div className="text-lg sm:text-xl font-bold">{MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || '—'}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Status</div>
                 </div>
-                <div className="stat-card">
-                  <Calendar size={16} className="mx-auto mb-1.5 text-purple-400" />
+                <div className="stat">
+                  <Calendar size={16} className="mx-auto mb-1.5 text-zinc-300" />
                   <div className="text-[10px] sm:text-xs font-semibold leading-tight">{endDateStr}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Resolution Date</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat">
                   <Coins size={16} className="mx-auto mb-1.5 text-cyan-400" />
                   <div className="text-lg sm:text-xl font-bold tabular-nums">{Number(formatEther(totalPool)).toFixed(1)}</div>
                   <div className="text-[10px] sm:text-xs text-zinc-500 mt-0.5">Liquidity (0G)</div>
@@ -339,7 +339,7 @@ export default function MarketDetailPage() {
               </div>
 
               {/* SECTION 3 — Outcomes Panel */}
-              <div className="glass-card p-5 sm:p-6">
+              <div className="card p-5 sm:p-6">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Outcomes</h2>
                   <span className="text-xs text-zinc-600">{outcomes.length} options</span>
@@ -367,7 +367,7 @@ export default function MarketDetailPage() {
                           {/* Glow line */}
                           <div
                             className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 rounded-full ${
-                              isSelected ? 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]' : isWinner ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-zinc-700/60'
+                              isSelected ? 'bg-gradient-to-r bg-zinc-700' : isWinner ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'bg-zinc-700/60'
                             }`}
                             style={{ width: `${Math.max(2, poolPct)}%` }}
                           />
@@ -376,17 +376,17 @@ export default function MarketDetailPage() {
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all duration-300 ${
-                                  isSelected ? 'bg-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.7)]' : isWinner ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-zinc-700'
+                                  isSelected ? 'bg-zinc-600 ' : isWinner ? 'bg-emerald-400 ' : 'bg-zinc-700'
                                 }`} />
                                 <h3 className="text-sm font-semibold truncate">{o.name || `Outcome ${i + 1}`}</h3>
                               </div>
                               {isWinner && <Trophy size={14} className="text-emerald-400 flex-shrink-0" />}
-                              {isSelected && <Sparkles size={14} className="text-purple-400 flex-shrink-0 animate-pulse" />}
+                              {isSelected && <Sparkles size={14} className="text-zinc-300 flex-shrink-0 animate-pulse" />}
                             </div>
 
                             {/* Probability bar */}
                             <div className="progress-bar mb-3">
-                              <div className="progress-fill-purple" style={{ width: `${Math.max(3, poolPct)}%` }} />
+                              <div className="bar-blue" style={{ width: `${Math.max(3, poolPct)}%` }} />
                             </div>
 
                             <div className="space-y-1.5">
@@ -400,7 +400,7 @@ export default function MarketDetailPage() {
                               </div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-zinc-500">Payout</span>
-                                <span className={`font-medium tabular-nums ${isSelected ? 'text-purple-300' : isWinner ? 'text-emerald-400' : 'text-zinc-400'}`}>{getPayoutMultiplier(o.pool)}</span>
+                                <span className={`font-medium tabular-nums ${isSelected ? 'text-zinc-300' : isWinner ? 'text-emerald-400' : 'text-zinc-400'}`}>{getPayoutMultiplier(o.pool)}</span>
                               </div>
                             </div>
 
@@ -408,7 +408,7 @@ export default function MarketDetailPage() {
                               <button
                                 className={`mt-4 w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
                                   isSelected
-                                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md shadow-purple-500/25'
+                                    ? 'bg-zinc-800 text-white '
                                     : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-300 group-hover:bg-zinc-700'
                                 }`}
                               >
@@ -425,9 +425,9 @@ export default function MarketDetailPage() {
 
               {/* SECTION 5 — AI Analysis */}
               {ai && (
-                <div className="glass-card p-5 sm:p-6 border-purple-500/10">
+                <div className="card p-5 sm:p-6 border-zinc-800">
                   <div className="flex items-center gap-2 mb-5">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-700 flex items-center justify-center">
                       <Brain size={16} className="text-white" />
                     </div>
                     <div>
@@ -439,7 +439,7 @@ export default function MarketDetailPage() {
                   <div className="grid sm:grid-cols-3 gap-4 mb-6">
                     <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
                       <div className="flex items-center gap-2 mb-3">
-                        <Target size={14} className="text-purple-400" />
+                        <Target size={14} className="text-zinc-300" />
                         <span className="text-xs font-medium text-zinc-400">Probability Score</span>
                       </div>
                       <div className="flex items-end gap-1">
@@ -447,7 +447,7 @@ export default function MarketDetailPage() {
                         <span className="text-sm text-zinc-600 mb-1">{ai.leader}</span>
                       </div>
                       <div className="mt-2 w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-700" style={{ width: `${ai.probability}%` }} />
+                        <div className="h-full rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${ai.probability}%` }} />
                       </div>
                     </div>
                     <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
@@ -493,7 +493,7 @@ export default function MarketDetailPage() {
 
               {/* SECTION 6 — Description */}
               {data.description && (
-                <div className="glass-card overflow-hidden">
+                <div className="card overflow-hidden">
                   <button
                     onClick={() => setAccordionOpen(!accordionOpen)}
                     className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-slate-900/30 transition-colors"
@@ -516,7 +516,7 @@ export default function MarketDetailPage() {
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50">
                           <Users size={12} /> Creator {data.creator.slice(0, 6)}...{data.creator.slice(-4)}
                         </span>
-                        <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 hover:text-purple-400 transition-colors">
+                        <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 hover:text-zinc-300 transition-colors">
                           <ExternalLink size={12} /> View Contract
                         </a>
                       </div>
@@ -526,7 +526,7 @@ export default function MarketDetailPage() {
               )}
 
               {/* SECTION 7 — Resolution Info */}
-              <div className="glass-card overflow-hidden">
+              <div className="card overflow-hidden">
                 <button
                   onClick={() => setAccordionOpen(!accordionOpen)}
                   className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-zinc-900/30 transition-colors"
@@ -568,7 +568,7 @@ export default function MarketDetailPage() {
               </div>
 
               {/* SECTION 8 — Activity Feed */}
-              <div className="glass-card p-5 sm:p-6">
+              <div className="card p-5 sm:p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <MessageCircle size={16} className="text-zinc-500" />
                   <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">Activity Feed</h2>
@@ -576,11 +576,11 @@ export default function MarketDetailPage() {
                 {data.participantCount > 0n ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
-                        <Activity size={14} className="text-purple-400" />
+                      <div className="w-8 h-8 rounded-full bg-zinc-800/50 flex items-center justify-center flex-shrink-0">
+                        <Activity size={14} className="text-zinc-300" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-zinc-300"><span className="text-purple-400 font-medium">{Number(data.participantCount)} participants</span> have placed bets on this market</p>
+                        <p className="text-xs text-zinc-300"><span className="text-zinc-300 font-medium">{Number(data.participantCount)} participants</span> have placed bets on this market</p>
                         <p className="text-[10px] text-zinc-600 mt-0.5">Total volume: {Number(formatEther(data.totalVolume)).toFixed(2)} 0G</p>
                       </div>
                     </div>
@@ -619,11 +619,11 @@ export default function MarketDetailPage() {
 
             {/* ─── RIGHT COLUMN — Betting Panel ──────────────────────── */}
             <div className="lg:col-span-1">
-              <div className="glass-card p-5 sm:p-6 sticky top-[calc(3.5rem+3rem)] sm:top-[calc(4rem+3rem)] border-zinc-700/50">
+              <div className="card p-5 sm:p-6 sticky top-[calc(3.5rem+3rem)] sm:top-[calc(4rem+3rem)] border-zinc-700/50">
 
                 {/* User Bet Badge */}
                 {userBet && (
-                  <div className="mb-5 p-4 rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/15">
+                  <div className="mb-5 p-4 rounded-xl bg-zinc-800/50 border border-zinc-800">
                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Your Position</p>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium">{outcomes[Number(userBet.outcomeIndex)]?.name || `#${Number(userBet.outcomeIndex) + 1}`}</span>
@@ -720,9 +720,9 @@ export default function MarketDetailPage() {
                     <div className="mb-4">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-2">Selected Outcome</label>
                       {selectedOutcome !== null ? (
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                          <span className="text-sm font-medium text-purple-300">{outcomes[selectedOutcome]?.name}</span>
-                          <Sparkles size={14} className="text-purple-400" />
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-800 border border-zinc-700">
+                          <span className="text-sm font-medium text-zinc-300">{outcomes[selectedOutcome]?.name}</span>
+                          <Sparkles size={14} className="text-zinc-300" />
                         </div>
                       ) : (
                         <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-xs text-zinc-600 text-center">
@@ -742,7 +742,7 @@ export default function MarketDetailPage() {
                           placeholder="0.00"
                           value={betAmount}
                           onChange={(e) => setBetAmount(e.target.value)}
-                          className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 transition-all pr-14"
+                          className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-sm font-medium text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-600/30 transition-all pr-14"
                         />
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400">0G</span>
                       </div>
@@ -778,7 +778,7 @@ export default function MarketDetailPage() {
                     <button
                       onClick={handlePlaceBet}
                       disabled={selectedOutcome === null || !betAmount || !signer || placing}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 mb-3"
+                      className="w-full py-3.5 rounded-xl bg-zinc-800 text-white text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed  mb-3"
                     >
                       {placing ? (
                         <span className="flex items-center justify-center gap-2"><Loader2 size={15} className="animate-spin" /> Confirming...</span>
@@ -804,7 +804,7 @@ export default function MarketDetailPage() {
                     )}
 
                     {txHash && (
-                      <a href={`${CHAIN.explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                      <a href={`${CHAIN.explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-1.5 text-xs text-zinc-300 hover:text-zinc-300 transition-colors">
                         <ExternalLink size={12} /> View on Explorer
                       </a>
                     )}

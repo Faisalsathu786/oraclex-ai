@@ -51,7 +51,7 @@ export function WalletButton({ onConnect }: { onConnect?: () => void }) {
         onConnect?.()
       }}
       disabled={isConnecting}
-      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50"
+      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
     >
       <Wallet size={16} />
       {isConnecting ? 'Connecting...' : 'Connect Wallet'}

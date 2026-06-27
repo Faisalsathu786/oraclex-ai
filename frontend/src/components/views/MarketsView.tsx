@@ -28,7 +28,7 @@ function StateBadge({ state }: { state: number }) {
 
 function OutcomeBar({ label, pool, totalPool, colorIndex }: { label: string; pool: bigint; totalPool: bigint; colorIndex: number }) {
   const pct = totalPool > 0n ? Number(pool * 100n / totalPool) : 0
-  const colors = ['progress-fill-purple', 'progress-fill-blue', 'progress-fill-green', 'progress-fill-yellow', 'progress-fill-red']
+  const colors = ['bar-blue', 'progress-fill-blue', 'progress-fill-green', 'progress-fill-yellow', 'progress-fill-red']
   return (
     <div className="mb-2 last:mb-0">
       <div className="flex items-center justify-between text-xs mb-1">
@@ -100,7 +100,7 @@ export default function MarketsView() {
             placeholder="Search markets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-9 py-2 text-sm w-full"
+            className="input pl-9 py-2 text-sm w-full"
           />
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -123,7 +123,7 @@ export default function MarketsView() {
       {loading && (
         <div className="space-y-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="glass-card p-5">
+            <div key={i} className="card p-5">
               <div className="h-4 bg-zinc-800 rounded w-3/4 mb-3 animate-pulse" />
               <div className="h-3 bg-zinc-800/50 rounded w-1/2 mb-2 animate-pulse" />
               <div className="h-2 bg-zinc-800/50 rounded animate-pulse" />
@@ -153,7 +153,7 @@ export default function MarketsView() {
             const totalPool = outcomes.reduce((s, o) => s + o.pool, 0n)
             return (
               <Link key={m.address} href={`/markets/${Number(m.data.id)}`}>
-                <div className="glass-card p-5 group cursor-pointer transition-all duration-200">
+                <div className="card p-5 group cursor-pointer transition-all duration-200">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">

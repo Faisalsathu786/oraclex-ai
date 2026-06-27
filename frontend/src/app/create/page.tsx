@@ -44,7 +44,7 @@ export default function CreateMarketPage() {
         <div className="text-center">
           <Wallet size={40} className="mx-auto mb-4 text-zinc-600" />
           <p className="text-zinc-400 mb-4">Connect your wallet to create a market</p>
-          <button onClick={connect} className="px-5 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors">
+          <button onClick={connect} className="px-5 py-2 rounded-xl bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 transition-colors">
             Connect Wallet
           </button>
         </div>
@@ -58,7 +58,7 @@ export default function CreateMarketPage() {
         <div className="text-center">
           <AlertTriangle size={40} className="mx-auto mb-4 text-red-400" />
           <p className="text-zinc-400 mb-4">Only the platform owner can create markets</p>
-          <Link href="/" className="text-sm text-purple-400 hover:text-purple-300">← Back to home</Link>
+          <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-300">← Back to home</Link>
         </div>
       </div>
     )
@@ -155,9 +155,9 @@ export default function CreateMarketPage() {
           <p className="text-sm text-zinc-500 mt-1">Deploy a new prediction market on 0G</p>
         </div>
 
-        <div className="glass-card p-4 sm:p-6 space-y-4 sm:space-y-5">
-          <div className="px-4 py-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <p className="text-xs text-purple-300">
+        <div className="card p-4 sm:p-6 space-y-4 sm:space-y-5">
+          <div className="px-4 py-3 rounded-xl bg-zinc-800/30 border border-zinc-800">
+            <p className="text-xs text-zinc-300">
               You are creating a market as the platform owner. Supports 2-15 outcomes.
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function CreateMarketPage() {
               placeholder="e.g., Will Bitcoin reach $200,000 in 2026?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input-field text-sm"
+              className="input text-sm"
             />
           </div>
 
@@ -180,7 +180,7 @@ export default function CreateMarketPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="input-field resize-none text-sm"
+              className="input resize-none text-sm"
             />
           </div>
 
@@ -193,7 +193,7 @@ export default function CreateMarketPage() {
                   onClick={() => setCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     category === cat
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-zinc-800 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
@@ -211,7 +211,7 @@ export default function CreateMarketPage() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="input-field text-sm w-full"
+                className="input text-sm w-full"
               />
             </div>
             <div>
@@ -220,7 +220,7 @@ export default function CreateMarketPage() {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="input-field text-sm w-full"
+                className="input text-sm w-full"
               />
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function CreateMarketPage() {
               placeholder="https://..."
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              className="input-field text-sm"
+              className="input text-sm"
             />
           </div>
 
@@ -240,7 +240,7 @@ export default function CreateMarketPage() {
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-zinc-400">Outcomes ({outcomes.length}/15)</label>
               {outcomes.length < 15 && (
-                <button onClick={addOutcome} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                <button onClick={addOutcome} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-300 transition-colors">
                   <Plus size={13} /> Add
                 </button>
               )}
@@ -254,7 +254,7 @@ export default function CreateMarketPage() {
                     placeholder={`Outcome ${i + 1}`}
                     value={outcome}
                     onChange={(e) => updateOutcome(i, e.target.value)}
-                    className="input-field flex-1 text-sm"
+                    className="input flex-1 text-sm"
                   />
                   {outcomes.length > 2 && (
                     <button onClick={() => removeOutcome(i)} className="p-1 text-red-400 hover:text-red-300 transition-colors">
@@ -288,7 +288,7 @@ export default function CreateMarketPage() {
               href={`${CHAIN.explorerUrl}/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300"
+              className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-300"
             >
               <ExternalLink size={12} /> View transaction on explorer
             </a>
@@ -298,7 +298,7 @@ export default function CreateMarketPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !signer}
-              className="btn-primary flex-1 text-sm disabled:opacity-40"
+              className="btn btn-blue flex-1 text-sm disabled:opacity-40"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -308,7 +308,7 @@ export default function CreateMarketPage() {
                 'Publish Market'
               )}
             </button>
-            <Link href="/" className="btn-secondary text-sm">Cancel</Link>
+            <Link href="/" className="btn btn-outline text-sm">Cancel</Link>
           </div>
         </div>
       </div>

@@ -117,14 +117,14 @@ export default function PortfolioView() {
       <div className="space-y-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="glass-card p-4">
+            <div key={i} className="card p-4">
               <div className="h-3 bg-zinc-800 rounded w-20 mb-3 animate-pulse" />
               <div className="h-6 bg-zinc-800 rounded w-24 animate-pulse" />
             </div>
           ))}
         </div>
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="glass-card p-4">
+          <div key={i} className="card p-4">
             <div className="h-4 bg-zinc-800 rounded w-3/4 mb-2 animate-pulse" />
             <div className="h-3 bg-zinc-800/50 rounded w-1/2 animate-pulse" />
           </div>
@@ -138,19 +138,19 @@ export default function PortfolioView() {
       <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-6">Portfolio</h2>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4">
+        <div className="card p-4">
           <p className="text-xs text-zinc-500 mb-1">Wallet Balance</p>
           <p className="text-2xl font-bold tabular-nums text-white">{balance} <span className="text-xs font-normal text-zinc-500">0G</span></p>
         </div>
-        <div className="glass-card p-4">
+        <div className="card p-4">
           <p className="text-xs text-zinc-500 mb-1">Total Invested</p>
           <p className="text-2xl font-bold tabular-nums text-white">{totalInvested.toFixed(4)} <span className="text-xs font-normal text-zinc-500">0G</span></p>
         </div>
-        <div className="glass-card p-4">
+        <div className="card p-4">
           <p className="text-xs text-zinc-500 mb-1">Open Positions</p>
           <p className="text-2xl font-bold tabular-nums text-white">{openBets.length}</p>
         </div>
-        <div className="glass-card p-4">
+        <div className="card p-4">
           <p className="text-xs text-zinc-500 mb-1">Resolved</p>
           <p className="text-2xl font-bold tabular-nums text-white">{resolvedBets.length}</p>
         </div>
@@ -168,7 +168,7 @@ export default function PortfolioView() {
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Open Positions</h3>
               <div className="space-y-3">
                 {openBets.map((b) => (
-                  <div key={b.address} className="glass-card p-5">
+                  <div key={b.address} className="card p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{b.market}</p>
@@ -194,7 +194,7 @@ export default function PortfolioView() {
                   const isClaiming = claimingAddr === b.address
                   const isClaimed = b.claimedAt > 0n
                   return (
-                    <div key={b.address} className={`glass-card p-4 border ${won ? 'border-zinc-700' : 'border-zinc-800'}`}>
+                    <div key={b.address} className={`card p-4 border ${won ? 'border-zinc-700' : 'border-zinc-800'}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-800 text-zinc-500'}`}>
@@ -240,7 +240,7 @@ export default function PortfolioView() {
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Pending & Locked</h3>
               <div className="space-y-2">
                 {otherBets.map((b) => (
-                  <div key={b.address} className="glass-card p-4 flex items-center justify-between opacity-70">
+                  <div key={b.address} className="card p-4 flex items-center justify-between opacity-70">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs text-zinc-500">{MARKET_STATE_LABELS[b.data.state as 0|1|2|3|4] || 'Unknown'}</span>
                       <span className="text-sm text-zinc-300 truncate">{b.market}</span>

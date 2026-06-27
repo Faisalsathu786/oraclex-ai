@@ -143,7 +143,7 @@ export default function Home() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="glass-card p-5">
+              <div key={i} className="card p-5">
                 <div className="h-4 bg-zinc-800 rounded w-3/4 mb-4 animate-pulse" />
                 <div className="h-3 bg-zinc-800/50 rounded w-1/2 mb-3 animate-pulse" />
                 <div className="h-2 bg-zinc-800/50 rounded animate-pulse" />
@@ -151,7 +151,7 @@ export default function Home() {
             ))}
           </div>
         ) : featured.length === 0 ? (
-          <div className="glass-card p-10 text-center text-zinc-600 text-sm">
+          <div className="card p-10 text-center text-zinc-600 text-sm">
             No open markets yet.
           </div>
         ) : (
@@ -160,7 +160,7 @@ export default function Home() {
               const totalPool = m.outcomes.reduce((s, o) => s + o.pool, 0n)
               return (
                 <Link key={m.id} href={`/markets/${m.id}`}>
-                  <div className="glass-card p-5 group cursor-pointer transition-all duration-200">
+                  <div className="card p-5 group cursor-pointer transition-all duration-200">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">{m.category}</span>
                     </div>

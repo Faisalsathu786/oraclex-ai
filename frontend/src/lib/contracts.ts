@@ -22,45 +22,35 @@ export const MARKET_STATE_LABELS: Record<MarketState, string> = {
 }
 
 export const MARKET_STATE_CLASSES: Record<MarketState, string> = {
-  0: 'state-pending',
-  1: 'state-open',
-  2: 'state-locked',
-  3: 'state-resolved',
-  4: 'state-cancelled',
+  0: 'tag tag-yellow',
+  1: 'tag tag-green',
+  2: 'tag tag-yellow',
+  3: 'tag tag-blue',
+  4: 'tag tag-red',
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  Crypto: 'cat-crypto',
-  Sports: 'cat-sports',
-  DeFi: 'cat-defi',
-  Politics: 'cat-politics',
-  Technology: 'cat-technology',
-  Science: 'cat-science',
-  Entertainment: 'cat-entertainment',
-  AI: 'cat-ai',
-  Meme: 'cat-meme',
-  'Layer 1': 'cat-layer1',
+  Crypto: 'tag tag-blue',
+  Sports: 'tag tag-green',
+  DeFi: 'tag tag-yellow',
+  Politics: 'tag tag-red',
+  Technology: 'tag tag-zinc',
+  Science: 'tag tag-blue',
+  Entertainment: 'tag tag-zinc',
+  AI: 'tag tag-blue',
+  Meme: 'tag tag-yellow',
+  'Layer 1': 'tag tag-green',
 }
 
 export function getCategoryClass(category: string): string {
-  return CATEGORY_COLORS[category] || 'cat-crypto'
+  return CATEGORY_COLORS[category] || 'tag tag-blue'
 }
 
 export function getStateClass(state: number): string {
-  return MARKET_STATE_CLASSES[state as MarketState] || 'badge'
+  return MARKET_STATE_CLASSES[state as MarketState] || 'tag tag-zinc'
 }
 
-export function getProbColor(pct: number): string {
-  if (pct >= 70) return 'prob-high'
-  if (pct >= 40) return 'prob-mid'
-  return 'prob-low'
-}
 
-export function getProbBarClass(pct: number): string {
-  if (pct >= 70) return 'progress-fill-green'
-  if (pct >= 40) return 'progress-fill-yellow'
-  return 'progress-fill-red'
-}
 
 export interface MarketData {
   address: string
