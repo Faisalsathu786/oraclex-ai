@@ -192,6 +192,11 @@
   .bar-yellow { background: #eab308; }
   .bar-red { background: #ef4444; }
   .bar-zinc { background: #52525b; }
+  .bar-violet { background: #8b5cf6; }
+  .bar-amber { background: #f59e0b; }
+  .bar-cyan { background: #06b6d4; }
+  .bar-rose { background: #f43f5e; }
+  .bar-emerald { background: #10b981; }
 
   .skeleton {
     background: linear-gradient(90deg, #18181b 25%, #222226 50%, #18181b 75%);
