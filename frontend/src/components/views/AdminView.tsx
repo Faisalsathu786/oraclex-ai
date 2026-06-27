@@ -104,7 +104,14 @@ export default function AdminView() {
       await tx.wait()
       setTxStatus('Market cancelled')
       loadData()
-    } catch (e: any) { setTxStatus('Error: ' + (e.message?.slice(0, 60) || '')) }
+    } catch (e: any) {
+      const msg = e?.reason || e?.message || ''
+      if (msg.includes('Not pending')) {
+        setTxStatus('Error: Only pending markets can be cancelled.')
+      } else {
+        setTxStatus('Error: Transaction failed.')
+      }
+    }
   }
 
   const resolveMarketAction = async (marketAddr: string, winningOutcome: number) => {
