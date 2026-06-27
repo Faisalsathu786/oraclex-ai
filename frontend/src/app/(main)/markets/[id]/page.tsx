@@ -7,7 +7,6 @@ import { useWallet } from '@/components/web3/Web3Provider'
 import { CHAIN } from '@/lib/config'
 import { formatEther } from 'ethers'
 import {
-  fetchAllMarkets,
   fetchMarketOutcomes,
   MarketData,
   OutcomeData,
@@ -38,9 +37,9 @@ function getTimeRemaining(endTimestamp: bigint): string {
   const days = Math.floor(remaining / 86400)
   const hours = Math.floor((remaining % 86400) / 3600)
   const mins = Math.floor((remaining % 3600) / 60)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m`
+  if (days > 0) return days + 'd ' + hours + 'h'
+  if (hours > 0) return hours + 'h ' + mins + 'm'
+  return mins + 'm'
 }
 
 export default function MarketDetailPage() {
@@ -59,9 +58,40 @@ export default function MarketDetailPage() {
   const [placing, setPlacing] = useState(false)
   const [txHash, setTxHash] = useState('')
   const [txStatus, setTxStatus] = useState('')
+  const [txStatusType, setTxStatusType] = useState<'success' | 'error' | 'pending' | ''>('')
   const [userBet, setUserBet] = useState<BetData | null>(null)
   const [claiming, setClaiming] = useState(false)
   const [showDesc, setShowDesc] = useState(false)
+  const [walletBalance, setWalletBalance] = useState('0')
+
+  function clearTxStatus() {
+    setTxStatus('')
+    setTxStatusType('')
+    setTxHash('')
+  }
+
+  function parseError(err: any): string {
+    const msg = err?.reason || err?.message || err?.data?.message || ''
+    if (msg.includes('insufficient funds') || msg.includes('insufficient balance')) {
+      const bet = betAmount || 'the requested'
+      return 'Insufficient balance. Your wallet has ' + walletBalance.slice(0, 6) + ' 0G but the bet requires ' + bet + ' 0G.'
+    }
+    if (msg.includes('user rejected') || msg.includes('User denied') || msg.includes('ACTION_REJECTED')) {
+      return 'Transaction was cancelled.'
+    }
+    if (msg.includes('execution reverted')) {
+      const reason = msg.match(/reason="([^"]+)"/)?.[1] || msg.match(/reverted with reason string '([^']+)'/)?.[1]
+      if (reason) return 'Contract error: ' + reason + '.'
+      return 'Transaction reverted by the contract.'
+    }
+    if (msg.includes('timeout') || msg.includes('network') || msg.includes('NETWORK_ERROR')) {
+      return 'Network error. Check your connection and try again.'
+    }
+    if (msg.includes('nonce')) {
+      return 'Transaction failed. Try again.'
+    }
+    return 'Transaction failed. Please try again.'
+  }
 
   const loadMarket = useCallback(async () => {
     if (isNaN(marketIndex)) return
@@ -70,7 +100,7 @@ export default function MarketDetailPage() {
     try {
       const rpc = getRpcProvider()
       const factory = getFactoryContract(rpc)
-      const addr: string = await factory.getMarket(marketIndex)
+      const addr = await factory.getMarket(marketIndex)
       if (!addr || addr === '0x0000000000000000000000000000000000000000') {
         setError('Market not found'); setLoading(false); return
       }
@@ -97,8 +127,7 @@ export default function MarketDetailPage() {
       try {
         const rpc = getRpcProvider()
         const mc = getMarketContract(marketAddress, rpc)
-        const hb = await mc.hasBet(address)
-        if (hb) {
+        if (await mc.hasBet(address)) {
           const raw = await mc.bets(address)
           setUserBet({ user: raw.user, outcomeIndex: raw.outcomeIndex, amount: raw.amount, claimedAt: raw.claimedAt })
         } else setUserBet(null)
@@ -107,40 +136,84 @@ export default function MarketDetailPage() {
     load()
   }, [marketAddress, address])
 
+  useEffect(() => {
+    if (!address) return
+    getRpcProvider().getBalance(address).then(b => setWalletBalance(formatEther(b))).catch(() => {})
+  }, [address])
+
   const handleClaim = async () => {
     if (!signer || !marketAddress) return
-    setClaiming(true); setTxStatus('Claiming reward...'); setTxHash('')
+    setClaiming(true)
+    setTxStatus('Claiming reward...')
+    setTxStatusType('pending')
+    setTxHash('')
     try {
       const hash = await claimReward(marketAddress, signer)
-      setTxHash(hash); setTxStatus('Reward claimed')
+      setTxHash(hash)
+      setTxStatus('Reward claimed successfully')
+      setTxStatusType('success')
       const rpc = getRpcProvider()
       const mc = getMarketContract(marketAddress, rpc)
       const raw = await mc.bets(address!)
       setUserBet({ user: raw.user, outcomeIndex: raw.outcomeIndex, amount: raw.amount, claimedAt: raw.claimedAt })
       loadMarket()
-    } catch (e: any) { setTxStatus(e.message?.slice(0, 100) || 'Claim failed') }
+    } catch (e: any) {
+      setTxStatus(parseError(e))
+      setTxStatusType('error')
+    }
     setClaiming(false)
   }
 
   const handlePlaceBet = async () => {
     if (!signer || !marketAddress || selectedOutcome === null || !betAmount) return
-    setPlacing(true); setTxStatus('Submitting bet...'); setTxHash('')
+    clearTxStatus()
+    const amount = Number(betAmount)
+    if (amount <= 0) {
+      setTxStatus('Please enter a valid bet amount greater than 0.')
+      setTxStatusType('error')
+      return
+    }
+    const bal = Number(walletBalance)
+    if (amount > bal) {
+      setTxStatus('Insufficient balance. Your wallet has ' + bal.toFixed(4) + ' 0G but the bet requires ' + amount + ' 0G.')
+      setTxStatusType('error')
+      return
+    }
+    setPlacing(true)
+    setTxStatus('Submitting bet...')
+    setTxStatusType('pending')
+    setTxHash('')
     try {
       const hash = await placeBet(marketAddress, selectedOutcome, betAmount, signer)
-      setTxHash(hash); setTxStatus('Bet placed'); loadMarket()
-    } catch (e: any) { setTxStatus(e.message?.slice(0, 100) || 'Transaction failed') }
+      setTxHash(hash)
+      setTxStatus('Bet placed successfully')
+      setTxStatusType('success')
+      loadMarket()
+    } catch (e: any) {
+      setTxStatus(parseError(e))
+      setTxStatusType('error')
+    }
     setPlacing(false)
   }
 
   const isOpen = data?.state === 1
   const isResolved = data?.state === 3
   const endDateStr = data?.endDate ? new Date(Number(data.endDate) * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
-  const timeRemaining = data?.endDate ? getTimeRemaining(data.endDate) : '—'
+  const timeRemaining = data?.endDate ? getTimeRemaining(data.endDate) : '-'
   const totalPool = outcomes.reduce((s, o) => s + o.pool, 0n)
 
   const getPayoutMultiplier = (outcomePool: bigint) => {
     if (totalPool === 0n || outcomePool === 0n) return '1.00x'
     return (Number(totalPool) / Number(outcomePool)).toFixed(2) + 'x'
+  }
+
+  function getStatusStyle() {
+    switch (txStatusType) {
+      case 'success': return 'border-green-500/20 bg-green-950/20 text-green-400'
+      case 'error': return 'border-red-500/20 bg-red-950/20 text-red-400'
+      case 'pending': return 'border-zinc-700 bg-zinc-900 text-zinc-300'
+      default: return ''
+    }
   }
 
   if (!isConnected) {
@@ -188,21 +261,19 @@ export default function MarketDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-xs text-zinc-600">
-        <Link href="/markets" className="hover:text-zinc-400 transition-colors">Markets</Link>
-        <span>/</span>
+        <Link href="/markets" className="hover:text-zinc-400 transition-colors">Markets</Link><span>/</span>
         <span className="text-zinc-400 truncate max-w-[300px]">{data.title}</span>
       </div>
 
       <div className="card p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <span className={`tag ${getCategoryClass(data.category)}`}>{data.category}</span>
-          <span className={`tag ${getStateClass(data.state)}`}>{MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || 'Unknown'}</span>
+          <span className={'tag ' + getCategoryClass(data.category)}>{data.category}</span>
+          <span className={'tag ' + getStateClass(data.state)}>{MARKET_STATE_LABELS[data.state as 0|1|2|3|4] || 'Unknown'}</span>
         </div>
         <h1 className="text-2xl font-bold leading-tight">{data.title}</h1>
         {data.imageUrl && <img src={data.imageUrl} alt="" className="w-full h-48 object-cover rounded-xl border border-zinc-800" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />}
         <div className="flex items-center gap-4 text-xs text-zinc-500 pt-3 border-t border-zinc-800">
-          <span>Resolution: {endDateStr}</span>
-          <span>Time left: {timeRemaining}</span>
+          <span>Resolution: {endDateStr}</span><span>Time left: {timeRemaining}</span>
         </div>
       </div>
 
@@ -220,7 +291,7 @@ export default function MarketDetailPage() {
           {outcomes.length === 0 ? (
             <div className="card p-10 text-center text-zinc-600 text-sm">No outcomes loaded</div>
           ) : (
-            <div className={`grid gap-4 ${outcomes.length <= 4 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
+            <div className={'grid gap-4 ' + (outcomes.length <= 4 ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
               {outcomes.map((o, i) => {
                 const poolPct = totalPool > 0n ? Math.round(Number(o.pool * 10000n) / Number(totalPool)) / 100 : 0
                 const isSelected = selectedOutcome === i
@@ -233,44 +304,36 @@ export default function MarketDetailPage() {
                     <button
                       onClick={() => {
                         if (isOpen && !placing) {
-                          if (isSelected) { setSelectedOutcome(null); setBetAmount('') }
-                          else { setSelectedOutcome(i); setBetAmount('') }
+                          if (isSelected) { setSelectedOutcome(null); setBetAmount(''); clearTxStatus() }
+                          else { setSelectedOutcome(i); setBetAmount(''); clearTxStatus() }
                         }
                       }}
                       disabled={!isOpen && !isWinner && !myBet}
-                      className={`w-full text-left rounded-xl border-2 transition-all duration-200 ${
-                        isSelected ? `${c.border} ${c.bg} ring-2 ${c.ring} rounded-b-none border-b-0`
+                      className={'w-full text-left rounded-xl border-2 transition-all duration-200 ' + (
+                        isSelected ? c.border + ' ' + c.bg + ' ring-2 ' + c.ring + ' rounded-b-none border-b-0'
                         : isWinner ? 'border-emerald-500/60 bg-emerald-950/20'
                         : myBet ? 'border-zinc-600 bg-zinc-900/50'
                         : 'border-zinc-800 bg-transparent hover:border-zinc-600 hover:bg-zinc-900/30'
-                      }`}
+                      )}
                     >
                       <div className="p-5">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            <div className={'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ' + (
                               isSelected ? c.border : isWinner ? 'border-emerald-500' : myBet ? 'border-zinc-500' : 'border-zinc-700'
-                            }`}>
+                            )}>
                               {(isSelected || isWinner || myBet) && (
-                                <div className={`w-2.5 h-2.5 rounded-full ${
-                                  isSelected ? c.dot : isWinner ? 'bg-emerald-500' : 'bg-zinc-500'
-                                }`} />
+                                <div className={'w-2.5 h-2.5 rounded-full ' + (isSelected ? c.dot : isWinner ? 'bg-emerald-500' : 'bg-zinc-500')} />
                               )}
                             </div>
-                            <h3 className="text-base font-semibold truncate">{o.name || `Outcome ${i + 1}`}</h3>
+                            <h3 className="text-base font-semibold truncate">{o.name || 'Outcome ' + (i + 1)}</h3>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                             {isWinner && <span className="tag tag-green">Won</span>}
                             {myBet && !isWinner && <span className="tag tag-blue">Your Pick</span>}
                           </div>
                         </div>
-
-                        <div className="mb-3">
-                          <div className="bar h-2.5">
-                            <div className={`bar-fill ${isSelected ? c.bar : isWinner ? 'bar-green' : 'bar-zinc'}`} style={{ width: `${Math.max(2, poolPct)}%` }} />
-                          </div>
-                        </div>
-
+                        <div className="mb-3"><div className="bar h-2.5"><div className={'bar-fill ' + (isSelected ? c.bar : isWinner ? 'bar-green' : 'bar-zinc')} style={{ width: Math.max(2, poolPct) + '%' }} /></div></div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-5">
                             <span className="text-xl font-bold tabular-nums text-white">{poolPct.toFixed(1)}%</span>
@@ -282,46 +345,35 @@ export default function MarketDetailPage() {
                     </button>
 
                     {isSelected && isOpen && (
-                      <div className={`rounded-b-xl border-2 border-t-0 ${c.border} ${c.bg} p-5`}>
-                        <p className="text-sm font-medium text-zinc-300 mb-4">
-                          Place bet on <span className={c.text}>{o.name}</span>
-                        </p>
+                      <div className={'rounded-b-xl border-2 border-t-0 ' + c.border + ' ' + c.bg + ' p-5'}>
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-sm font-medium text-zinc-300">Place bet on <span className={c.text}>{o.name}</span></p>
+                          <span className="text-[10px] text-zinc-600">Balance: {Number(walletBalance).toFixed(4)} 0G</span>
+                        </div>
 
                         <div className="flex items-center gap-2 mb-4">
                           {['1', '5', '10', '50'].map((amt) => (
-                            <button
-                              key={amt}
-                              onClick={() => setBetAmount(amt)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                betAmount === amt ? `${c.border} ${c.bg} ${c.text}` : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                              }`}
-                            >
-                              {amt} 0G
-                            </button>
+                            <button key={amt} onClick={() => setBetAmount(amt)}
+                              className={'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ' + (betAmount === amt ? c.border + ' ' + c.bg + ' ' + c.text : 'border-zinc-700 text-zinc-400 hover:border-zinc-500')}
+                            >{amt} 0G</button>
                           ))}
                         </div>
 
                         <div className="flex gap-2 mb-4">
                           <div className="relative flex-1">
-                            <input
-                              type="number" step="0.001" min="0" placeholder="Custom amount"
-                              value={betAmount} onChange={e => setBetAmount(e.target.value)}
-                              className="input pr-10"
-                            />
+                            <input type="number" step="0.001" min="0" placeholder="Custom amount"
+                              value={betAmount} onChange={e => setBetAmount(e.target.value)} className="input pr-10" />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">0G</span>
                           </div>
-                          <button
-                            onClick={handlePlaceBet}
+                          <button onClick={handlePlaceBet}
                             disabled={!betAmount || Number(betAmount) <= 0 || placing}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 ${c.btn}`}
-                          >
-                            {placing ? 'Placing...' : 'Place Bet'}
-                          </button>
+                            className={'px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 ' + c.btn}
+                          >{placing ? 'Placing...' : 'Place Bet'}</button>
                         </div>
 
-                        {betAmount && Number(betAmount) > 0 && (
+                        {betAmount && Number(betAmount) > 0 && Number(betAmount) <= Number(walletBalance) && (
                           <div className="flex items-center gap-4 text-xs text-zinc-500 bg-black/30 rounded-lg px-3 py-2">
-                            <span>Estimated payout:</span>
+                            <span>Est. payout:</span>
                             <span className="text-green-400 font-semibold tabular-nums">
                               {(Number(betAmount) * Number(totalPool) / Math.max(1, Number(o.pool || 1n))).toFixed(3)} 0G
                             </span>
@@ -329,23 +381,25 @@ export default function MarketDetailPage() {
                           </div>
                         )}
 
+                        {betAmount && Number(betAmount) > Number(walletBalance) && (
+                          <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/20 border border-red-500/20 rounded-lg px-3 py-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                            Insufficient balance. You have {Number(walletBalance).toFixed(4)} 0G.
+                          </div>
+                        )}
+
                         {txStatus && (
-                          <div className={`mt-3 px-3 py-2 rounded-lg text-xs ${
-                            txStatus.includes('Error') || txStatus.includes('failed')
-                              ? 'bg-red-500/10 text-red-400'
-                              : txStatus.includes('placed') || txStatus.includes('Reward') || txStatus.includes('claimed')
-                              ? 'bg-green-500/10 text-green-400'
-                              : 'bg-zinc-800 text-zinc-300'
-                          }`}>
+                          <div className={'mt-3 px-3 py-2 rounded-lg border text-xs ' + getStatusStyle()}>
                             {txStatus}
-                            {txHash && <a href={`${CHAIN.explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="ml-2 underline">View tx</a>}
+                            {txHash && <a href={CHAIN.explorerUrl + '/tx/' + txHash} target="_blank" rel="noopener noreferrer" className="ml-2 underline">View tx</a>}
                           </div>
                         )}
                       </div>
                     )}
 
                     {isWinner && userBet && userBet.claimedAt === 0n && (
-                      <button onClick={handleClaim} disabled={claiming} className="w-full rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium p-3 transition-colors">
+                      <button onClick={handleClaim} disabled={claiming}
+                        className="w-full rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium p-3 transition-colors">
                         {claiming ? 'Claiming Reward...' : 'Claim Reward'}
                       </button>
                     )}
@@ -371,14 +425,14 @@ export default function MarketDetailPage() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-500"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Market Details</span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`text-zinc-500 transition-transform ${showDesc ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={'text-zinc-500 transition-transform ' + (showDesc ? 'rotate-180' : '')}><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {showDesc && (
               <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3">
                 {data.description && <p className="text-sm text-zinc-400 leading-relaxed">{data.description}</p>}
                 <div className="flex items-center gap-3 text-xs text-zinc-600">
                   <span>Creator: {data.creator.slice(0, 6)}...{data.creator.slice(-4)}</span>
-                  <a href={`${CHAIN.explorerUrl}/address/${data.address}`} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">Contract</a>
+                  <a href={CHAIN.explorerUrl + '/address/' + data.address} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">Contract</a>
                 </div>
               </div>
             )}
@@ -387,7 +441,6 @@ export default function MarketDetailPage() {
 
         <div className="space-y-4">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Analysis</h2>
-          {/* AI Analysis */}
           {(() => {
             const sorted = [...outcomes].map((o, i) => ({ ...o, index: i })).sort((a, b) => Number(b.pool - a.pool))
             const leader = sorted[0]
@@ -401,16 +454,16 @@ export default function MarketDetailPage() {
                 <div className="space-y-3">
                   <div>
                     <div className="flex justify-between text-xs mb-1"><span className="text-zinc-500">Leading</span><span className="text-zinc-300 font-medium">{leader?.name || 'N/A'}</span></div>
-                    <div className="bar"><div className="bar-fill bar-blue" style={{ width: `${leaderPct}%` }} /></div>
+                    <div className="bar"><div className="bar-fill bar-blue" style={{ width: leaderPct + '%' }} /></div>
                     <p className="text-xs text-zinc-500 mt-1">{leaderPct.toFixed(0)}% probability</p>
                   </div>
                   <div>
                     <div className="flex justify-between text-xs mb-1"><span className="text-zinc-500">Confidence</span><span className="text-green-400 font-medium">{confidence}%</span></div>
-                    <div className="bar"><div className="bar-fill bar-green" style={{ width: `${confidence}%` }} /></div>
+                    <div className="bar"><div className="bar-fill bar-green" style={{ width: confidence + '%' }} /></div>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-zinc-500">Risk</span>
-                    <span className={`font-medium ${riskLevel === 'Low' ? 'text-green-400' : riskLevel === 'Medium' ? 'text-yellow-400' : 'text-red-400'}`}>{riskLevel}</span>
+                    <span className={'font-medium ' + (riskLevel === 'Low' ? 'text-green-400' : riskLevel === 'Medium' ? 'text-yellow-400' : 'text-red-400')}>{riskLevel}</span>
                   </div>
                 </div>
               </div>
@@ -422,6 +475,7 @@ export default function MarketDetailPage() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between"><span className="text-zinc-500">Status</span><span>{MARKET_STATE_LABELS[data.state as 0|1|2|3|4]}</span></div>
               <div className="flex justify-between"><span className="text-zinc-500">Outcomes</span><span>{outcomes.length}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-500">Wallet</span><span className="tabular-nums">{Number(walletBalance).toFixed(3)} 0G</span></div>
               {userBet && <div className="flex justify-between"><span className="text-zinc-500">Your bet</span><span className="tabular-nums">{formatEther(userBet.amount)} 0G</span></div>}
               {userBet && userBet.claimedAt > 0n && <div className="text-green-400 text-xs">Claimed</div>}
             </div>
